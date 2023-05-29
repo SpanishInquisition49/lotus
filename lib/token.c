@@ -93,8 +93,6 @@ char *pretty_type(int type) {
             return "AND";
         case OR:
             return "OR";
-        case CLASS:
-            return "CLASS";
         case IF:
             return "IF";
         case ELSE:
@@ -107,16 +105,8 @@ char *pretty_type(int type) {
             return "PRINT";
         case RETURN:
             return "RETURN";
-        case SUPER:
-            return "SUPER";
-        case THIS:
-            return "THIS";
         case VAR:
             return "VAR";
-        case WHILE:
-            return "WHILE";
-        case FOR:
-            return "FOR";
         case TRUE:
             return "TRUE";
         case FALSE:

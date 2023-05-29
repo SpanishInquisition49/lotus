@@ -37,18 +37,13 @@ enum TokenType {
     // Keywords.
     AND,
     OR,
-    CLASS,
     IF,
     ELSE,
     FUN,
     NIL,
     PRINT,
     RETURN,
-    SUPER,
-    THIS,
     VAR,
-    WHILE,
-    FOR,
     TRUE,
     FALSE,
     MATCH,
@@ -59,7 +54,7 @@ enum TokenType {
 typedef struct {
     enum TokenType type;
     char* lexeme;
-    void* literal; // TODO: capire a cosa serve questo campo
+    void* literal;
     int line;
 } Token;
 

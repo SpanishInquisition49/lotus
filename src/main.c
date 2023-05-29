@@ -2,6 +2,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include "../lib/scanner.h"
+#include "../lib/parser.h"
 #include "../lib/list.h"
 
 List scanner(const char*);
