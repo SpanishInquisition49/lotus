@@ -4,7 +4,7 @@
 
 enum TokenType {
     // Single-character tokens.
-    LEFT_PAREN,
+    LEFT_PAREN = 1,
     RIGHT_PAREN,
     LEFT_BRACE,
     RIGHT_BRACE,
@@ -71,5 +71,9 @@ void token_print(Token);
 void tokens_print(List);
 
 void tokens_dup(List, List*);
+
+Token *tokens_get(List, int);
+
+void token_free(void*);
 
 #endif // !TOKEN_HTOKEN_H

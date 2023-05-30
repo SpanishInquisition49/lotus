@@ -1,6 +1,6 @@
-#ifndef LIST_H
-#define LIST_H
-#include <stdlib.h>
+#ifndef  LIST_H
+#define  LIST_H
+#include  <stdlib.h>
 
 typedef struct l_node {
     void *data;

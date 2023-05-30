@@ -1,9 +1,16 @@
 #include "token.h"
 #include "errors.h"
+#include "list.h"
 #include <stdio.h>
 #include <string.h>
 
 static char* pretty_type(int);
+
+void token_free(void *token) {
+    free(((Token*)token)->lexeme);
+    free(((Token*)token)->literal);
+    return;
+}
 
 void token_print(Token tok) {
     Log(INFO, "Line:  %d\t\tLexeme: %s\t\t\tToken Type: %s\n", tok.line, tok.lexeme,  pretty_type(tok.type));
@@ -17,6 +24,16 @@ void tokens_print(List tokens) {
         current = current->next;
     }
     return;
+}
+
+Token *tokens_get(List tokens, int index) {
+    if(index >= list_len(tokens))
+        return NULL;
+    List current = tokens;
+    for(int i = 0; i< index; i++){
+        current = current->next;
+    }
+    return current->data;
 }
 
 void tokens_dup(List source, List *dest) {

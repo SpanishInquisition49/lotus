@@ -6,6 +6,7 @@
 #include "../lib/list.h"
 
 List scanner(const char*);
+void parser(List);
 
 static int scanner_error = 0; 
 
@@ -16,10 +17,7 @@ int main(int argc, char *argv[]) {
         printf("Usage: main [filename]\n");
         return EXIT_FAILURE;
     }
-    // Scanner Phase
-    List tokens = scanner(argv[1]);
-    list_free(tokens, NULL);
-    // Parser Phase
+    parser(scanner(argv[1]));
     return EXIT_SUCCESS;
 }
 
@@ -32,6 +30,15 @@ List scanner(const char* filename) {
     scanner_errors_report(scanner);
     scanner_error = scanner_had_error(scanner);
     scanner_destroy(scanner);
-    return tokens;
+    return list_reverse(tokens);
 }
 
+void parser(List tokens) {
+    Parser parser;
+    parser_init(&parser, tokens);
+    Exp_t *ast = parser_generate_ast(&parser);
+    exp_destroy(ast);
+    parser_errors_report(parser);
+    parser_destroy(parser);
+    return;
+}

@@ -1,8 +1,9 @@
 #include "scanner.h"
-#include "keyworks.h"
+#include "keywords.h"
 #include "errors.h"
 #include "list.h"
 #include "token.h"
+#include "memory.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -29,6 +30,8 @@ void scanner_init(Scanner * scanner, const char * file_name) {
     scanner->tokens = NULL;
     scanner->source = NULL;
     scanner->filename = file_name;
+    for(int i =0; i<LOG_LEVELS; i++)
+        scanner->errors[i] = 0;
     return;
 }
 
@@ -49,7 +52,6 @@ int scanner_had_error(Scanner scanner) {
 
 void scanner_scan_tokens(Scanner *scanner) {
     FILE *f = fopen(scanner->filename, "r");
-    // TODO: cambiare con una gestione dell'errore migliore
     if(f == NULL) {
         scanner->errors[ERROR]++;
         Log(ERROR, "File '%s' is not a valid file\n", scanner->source);
@@ -70,11 +72,7 @@ void scanner_scan_tokens(Scanner *scanner) {
         char c = advance(scanner);
         scan_token(scanner, c);
     }
-    Token *eof = calloc(1, sizeof(Token));
-    if(!eof) {
-        perror("Calloc");
-        exit(EXIT_FAILURE);
-    }
+    Token *eof = mem_calloc(1, sizeof(Token));
     eof->type = END;
     eof->lexeme = "";
     eof->literal = NULL;
@@ -254,7 +252,7 @@ void identifier(Scanner *s) {
 
 void add_token(Scanner *s, enum TokenType t, char *literal) {
     int len = s->current - s->start;
-    Token *tok = calloc(1, sizeof(Token));
+    Token *tok = mem_calloc(1, sizeof(Token));
     tok->lexeme = strndup(s->source+s->start, len);
     tok->literal = literal;
     tok->type = t;

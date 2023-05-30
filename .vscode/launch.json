@@ -1,0 +1,13 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "type": "cppdbg",
+            "name": "lambda",
+            "request": "launch",
+            "program": "${workspaceFolder}/lambda",
+            "cwd": "${workspaceFolder}",
+            "args": ["${workspaceFolder}/example"]
+        }
+    ]
+}

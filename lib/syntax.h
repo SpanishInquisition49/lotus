@@ -1,26 +1,50 @@
 #ifndef SYNTAX_H
 #define SYNTAX_H
+#include "list.h"
+#include "token.h"
 
 typedef enum {
-    UNARY,
-    BINARY,
+    EXP_PANIC_MODE, // used only for the parser panic mode
+    EXP_UNARY,
+    EXP_BINARY,
+    EXP_LITERAL,
+    EXP_GROUPING,
 } ExpType;
 
 typedef enum {
-    IF,
-    VAR,
-    MATCH,
-    FUN,
+    T_STRING,
+    T_NUMBER,
+    T_BOOLEAN,
+    T_NIL,
+} LiteralType;
+
+typedef enum {
+    STMT_IF,
+    STMT_VAR,
+    STMT_MATCH,
+    STMT_FUN,
 } StmtType;
 
 typedef enum {
-    PLUS,
-    MINUS,
-    STAR,
-    SLASH,
-    AND,
-    OR,
+    OP_ERROR,
+    OP_PLUS,
+    OP_MINUS,
+    OP_STAR,
+    OP_SLASH,
+    OP_AND,
+    OP_OR,
+    OP_LESS,
+    OP_LESS_EQUAL,
+    OP_GREATER,
+    OP_GREATER_EQUAL,
+    OP_EQUAL,
+    OP_NOT_EQUAL,
+    OP_NOT,
 } Operator;
+
+/********************************************************************
+ *                          Expressions                             *
+ ********************************************************************/
 
 /**
  * This type act as a wrapper around all the possible expression type
@@ -31,21 +55,44 @@ typedef struct {
     void *exp;
 } Exp_t;
 
+Exp_t *exp_init(ExpType, void*);
+void exp_destroy(Exp_t*);
+
 typedef struct {
-    void *exp;
     Operator op;
+    Exp_t *right;
 } Exp_unary_t;
 
+Exp_unary_t *exp_unary_init(Operator, Exp_t*);
+void exp_unary_destroy(Exp_unary_t*);
+
 typedef struct {
-    void *left;
+    Exp_t *left;
     Operator op;
-    void *right;
+    Exp_t *right;
 } Exp_binary_t;
 
+Exp_binary_t *exp_binary_init(Exp_t*, Operator, Exp_t*);
+void exp_binary_destroy(Exp_binary_t*);
+
 typedef struct {
-    void * value;
+    Exp_t *exp;
+} Exp_grouping_t;
+
+Exp_grouping_t *exp_grouping_init(Exp_t*);
+void exp_groping_destroy(Exp_grouping_t*);
+
+typedef struct {
+    void *value;
+    LiteralType type;
 } Exp_literal_t;
 
+Exp_literal_t *exp_literal_init(LiteralType, void*);
+void exp_literal_destroy(Exp_literal_t*);
+
+/********************************************************************
+ *                          Statements                              *
+ ********************************************************************/
 
 typedef struct {
     void *stmt;
@@ -59,15 +106,18 @@ typedef struct {
 } Stmt_conditional_t;
 
 typedef struct {
-
+    // TODO
 } Stmt_match_t;
 
 typedef struct {
-    Exp_t exp;
+    Exp_t *exp;
+    Exp_t *follow_up_exp;
 } Stmt_let_t;
 
 typedef struct {
-
+    // TODO
 } Stmt_fun_t;
+
+Operator token_to_operator(Token);
 
 #endif // !SYNTAX_H
