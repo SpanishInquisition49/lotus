@@ -39,7 +39,7 @@ errors_o	:= ./lib/errors.o
 objects		:= 	$(main_o) $(list_o) $(scanner_o) $(parser_o) $(token_o) $(syntax_o) $(errors_o) $(memory_o)
 executable	:= lambda
 
-.PHONY		:=	clean
+.PHONY		:=	clean valgring
 
 
 $(executable): $(objects)
@@ -49,7 +49,7 @@ $(main_o): $(main_c)
 $(list_o): $(list_c) $(list_h)
 $(errors_o): $(errors_c) $(errors_h)
 $(memory_o): $(memory_c) $(memory_h)
-$(token_o): $(token_c) $(token_h) $(list_h) $(errors_h)
+$(token_o): $(token_c) $(token_h) $(list_h) $(errors_h) $(memory_h)
 $(syntax_o): $(syntax_c) $(syntax_h) $(token_h) $(list_h) $(memory_h)
 $(scanner_o): $(scanner_c) $(scanner_h) $(token_h) $(list_h) $(errors_h) $(memory_h) $(keywords_h)
 $(parser_o): $(parser_c) $(parser_h) $(token_h) $(list_h) $(errors_h) $(syntax_h) $(syntax_h)
@@ -57,3 +57,6 @@ $(parser_o): $(parser_c) $(parser_h) $(token_h) $(list_h) $(errors_h) $(syntax_h
 
 clean:
 	-@rm -f src/*.o lib/*.o $(executable)
+
+valgrind: $(executable)
+	-@valgrind --leak-check=full --track-origins=yes --log-file=lambda.log ./lambda example

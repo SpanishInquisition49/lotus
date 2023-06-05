@@ -18,6 +18,8 @@ void list_free(List, CallBackFree);
 
 List list_reverse(List);
 
+void list_reverse_in_place(List*);
+
 List list_dup(List);
 
 #endif // !LIST_H

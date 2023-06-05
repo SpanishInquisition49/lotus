@@ -30,7 +30,8 @@ List scanner(const char* filename) {
     scanner_errors_report(scanner);
     scanner_error = scanner_had_error(scanner);
     scanner_destroy(scanner);
-    return list_reverse(tokens);
+    list_reverse_in_place(&tokens);
+    return tokens;
 }
 
 void parser(List tokens) {

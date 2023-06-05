@@ -37,7 +37,7 @@ void scanner_init(Scanner * scanner, const char * file_name) {
 
 void scanner_destroy(Scanner scanner) {
     if(scanner.source != NULL) free(scanner.source);
-    list_free(scanner.tokens, NULL);
+    list_free(scanner.tokens, token_free);
     return;
 }
 
@@ -221,6 +221,7 @@ void string(Scanner *s) {
         Log(ERROR, "Line %d: Missing closing \"\n", line_start);
         return;
     }
+    // advance in order to consume '"' character
     advance(s);
     int len = s->current - s->start;
     add_token(s, STRING, strndup(s->source+s->start+1, len-2));
@@ -229,7 +230,7 @@ void string(Scanner *s) {
 void number(Scanner *s) {
     while(is_digit(peek(s))) advance(s);
 
-    //Look for a fractional part
+    // Look for a fractional part
     if(peek(s) == K_DOT && is_digit(peek_next(s))) {
         advance(s);
         while(is_digit(peek(s))) advance(s);

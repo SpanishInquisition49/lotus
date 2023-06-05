@@ -4,6 +4,7 @@
 #include "syntax.h"
 #include <stdarg.h>
 #include <stdio.h>
+#include <string.h>
 
 static Exp_t *expression(Parser*);
 static Exp_t *equality(Parser*);
@@ -49,11 +50,14 @@ Exp_t *expression(Parser *p) {
 }
 
 Exp_t *equality(Parser *p) {
-    Exp_t *expr = comparison(p);
+    Exp_t *expr = NULL;
+    expr = comparison(p);
     while(match(p, BANG_EQUAL, EQUAL_EQUAL)) {
-        Token prev = *(previous(p));
+        Token *prev = (previous(p));
         Exp_t *rigth = comparison(p);
-        Operator op = token_to_operator(prev);
+        Operator op = OP_ERROR;
+        if(prev)
+            op = token_to_operator(*prev);
         Exp_binary_t *e = exp_binary_init(expr, op, rigth);
         expr = exp_init(EXP_BINARY, e);
         Log(INFO, "Created equality expression\n");
@@ -63,11 +67,14 @@ Exp_t *equality(Parser *p) {
 }
 
 Exp_t *comparison(Parser *p) {
-    Exp_t *expr = term(p);
+    Exp_t *expr = NULL; 
+    expr = term(p);
     while(match(p, GREATER, GREATER_EQUAL, LESS, LESS_EQUAL)) {
-        Token prev = *previous(p);
+        Token *prev = previous(p);
         Exp_t *rigth = term(p);
-        Operator op = token_to_operator(prev);
+        Operator op = OP_ERROR;
+        if(prev)
+            op = token_to_operator(*prev);
         Exp_binary_t *e = exp_binary_init(expr, op, rigth);
         expr = exp_init(EXP_BINARY, e);
         Log(INFO, "Created comparison expression\n");
@@ -76,11 +83,14 @@ Exp_t *comparison(Parser *p) {
 }
 
 Exp_t *term(Parser *p) {
-    Exp_t *expr = factor(p);
+    Exp_t *expr = NULL;
+    expr = factor(p);
     while(match(p, MINUS, PLUS)) {
-        Token prev = *previous(p);
+        Token *prev = previous(p);
         Exp_t *rigth = factor(p);
-        Operator op = token_to_operator(prev);
+        Operator op = OP_ERROR;
+        if(prev)
+            op = token_to_operator(*prev);
         Exp_binary_t *e = exp_binary_init(expr, op, rigth);
         expr = exp_init(EXP_BINARY, e);
         Log(INFO, "Created term expression\n");
@@ -89,11 +99,14 @@ Exp_t *term(Parser *p) {
 }
 
 Exp_t *factor(Parser *p) {
-   Exp_t *expr = unary(p);
+   Exp_t *expr = NULL;
+   expr = unary(p);
    while(match(p, SLASH, STAR)) {
-        Token prev = *previous(p);
+        Token *prev = previous(p);
         Exp_t *rigth = unary(p);
-        Operator op = token_to_operator(prev);
+        Operator op = OP_ERROR;
+        if(prev)
+            op = token_to_operator(*prev);
         Exp_binary_t *e = exp_binary_init(expr, op, rigth);
         expr = exp_init(EXP_BINARY, e);
         Log(INFO, "Created factor expression\n");
@@ -103,9 +116,11 @@ Exp_t *factor(Parser *p) {
 
 Exp_t *unary(Parser* p) {
     if(match(p, BANG, MINUS)) {
-        Token prev = *previous(p);
+        Token *prev = previous(p);
         Exp_t *rigth = unary(p);
-        Operator op = token_to_operator(prev);
+        Operator op = OP_ERROR;
+        if(prev)
+            op = token_to_operator(*prev);
         Exp_unary_t *e = exp_unary_init(op, rigth);
         Log(INFO, "Created unary expression\n");
         return exp_init(EXP_UNARY, e);
@@ -129,9 +144,9 @@ Exp_t *primary(Parser *p) {
     if(match(p, NIL)) 
         return exp_init(EXP_LITERAL, exp_literal_init(T_NIL, NULL));
     if(match(p, NUMBER))
-        return exp_init(EXP_LITERAL, exp_literal_init(T_NUMBER, previous(p)->literal));
+        return exp_init(EXP_LITERAL, exp_literal_init(T_NUMBER, strdup(previous(p)->literal)));
     if(match(p, STRING))
-        return exp_init(EXP_LITERAL, exp_literal_init(T_STRING, previous(p)->literal));
+        return exp_init(EXP_LITERAL, exp_literal_init(T_STRING, strdup(previous(p)->literal)));
 
     if(match(p, LEFT_PAREN)) {
         Exp_t *expr = expression(p);

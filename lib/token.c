@@ -1,14 +1,19 @@
 #include "token.h"
 #include "errors.h"
 #include "list.h"
+#include "memory.h"
 #include <stdio.h>
 #include <string.h>
 
 static char* pretty_type(int);
 
 void token_free(void *token) {
-    free(((Token*)token)->lexeme);
-    free(((Token*)token)->literal);
+    Token *t = (Token*)token;
+    if(t->lexeme && t->type != END)
+        free(t->lexeme);
+    if(t->type == IDENTIFIER || t->type == NUMBER || t->type == STRING)
+        free(t->literal);
+    free(token);
     return;
 }
 
@@ -37,18 +42,15 @@ Token *tokens_get(List tokens, int index) {
 }
 
 void tokens_dup(List source, List *dest) {
-    List head = list_reverse(source);
+    List head = source;
+    list_reverse_in_place(&head);
     while(head) {
-        Token *duped = calloc(1, sizeof(Token));
-        Token tok = *((Token*)head->data);
-        if(!duped) {
-            perror("calloc");
-            exit(EXIT_FAILURE);
-        }
-        duped->line = tok.line;
-        duped->type = tok.type;
-        duped->lexeme = strdup(tok.lexeme);
-        duped->literal = tok.literal ? strdup(tok.literal) : NULL;
+        Token *duped = mem_calloc(1, sizeof(Token));
+        Token *tok = (Token*)head->data;
+        duped->line = tok->line;
+        duped->type = tok->type;
+        duped->lexeme = strdup(tok->lexeme);
+        duped->literal = tok->literal ? strdup(tok->literal) : NULL;
         list_add(dest, duped);
         head = head->next;
     }

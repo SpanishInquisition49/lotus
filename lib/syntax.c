@@ -79,6 +79,7 @@ void exp_destroy(Exp_t *exp) {
             break;
     }
     free(exp->exp);
+    free(exp);
 }
 
 Operator token_to_operator(Token t) {
@@ -111,7 +112,6 @@ Operator token_to_operator(Token t) {
             return OP_NOT;
         default:
             return OP_ERROR;
-    
     }
 }
 
