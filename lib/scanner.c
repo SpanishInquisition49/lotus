@@ -9,7 +9,7 @@
 #include <string.h>
 
 static void scan_token(Scanner*, char);
-static void add_token(Scanner*, enum TokenType, char*);
+static void add_token(Scanner*, TokenType, char*);
 static char advance(Scanner*);
 static char peek(Scanner*);
 static char peek_next(Scanner*);
@@ -26,6 +26,7 @@ static int keyword_get(char*);
 void scanner_init(Scanner * scanner, const char * file_name) {
     scanner->current = 0;
     scanner->start = 0;
+    scanner->length = 0;
     scanner->line_number = 1;
     scanner->tokens = NULL;
     scanner->source = NULL;
@@ -98,7 +99,7 @@ void scan_token(Scanner *scanner, char c) {
         case K_LEFT_SQUARE_BRACKET:
             add_token(scanner, LEFT_SQUARE_BRACKET, NULL);
             break;
-        case K_RIGHT_SQUARE_BRACKT:
+        case K_RIGHT_SQUARE_BRACKET:
             add_token(scanner, RIGHT_SQUARE_BRACKET, NULL);
             break;
         case K_COMMA:
@@ -139,7 +140,7 @@ void scan_token(Scanner *scanner, char c) {
             break;
         case K_SLASH:
             if(match(scanner, K_SLASH)){
-                // Ignore the comment untill the \n
+                // Ignore the comment until the \n
                 while(peek(scanner) != '\n' && !is_at_end(scanner)) advance(scanner);
             }
             else {
@@ -160,6 +161,9 @@ void scan_token(Scanner *scanner, char c) {
         default:
             if(is_digit(c))
                 number(scanner);
+            // TODO: Keep a watch on this condition (is_alphanumeric should be negated)
+            else if(c == K_WILDCARD && is_alphanumeric(peek_next(scanner)))
+                add_token(scanner, WILDCARD, NULL);
             else if(is_alpha(c))
                 identifier(scanner);
             else {
@@ -210,7 +214,7 @@ char peek_next(Scanner *s) {
 
 void string(Scanner *s) {
     int line_start = s->line_number;
-    // NOTE: special char escape should occour here
+    // NOTE: special char escape should occur here
     while(peek(s) != K_DOUBLE_QUOTE && !is_at_end(s)) {
         if(peek(s) == '\n') s->line_number++;
         advance(s);
@@ -251,7 +255,7 @@ void identifier(Scanner *s) {
     add_token(s, keyword_get(text), text);
 }
 
-void add_token(Scanner *s, enum TokenType t, char *literal) {
+void add_token(Scanner *s, TokenType t, char *literal) {
     int len = s->current - s->start;
     Token *tok = mem_calloc(1, sizeof(Token));
     tok->lexeme = strndup(s->source+s->start, len);

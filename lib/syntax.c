@@ -1,6 +1,7 @@
 #include "syntax.h"
 #include "memory.h"
 #include "token.h"
+#include <string.h>
 
 Exp_t *exp_init(ExpType t, void *exp) {
     Exp_t *e = mem_calloc(1, sizeof(Exp_t));
@@ -27,7 +28,23 @@ Exp_unary_t *exp_unary_init(Operator op, Exp_t *rigth) {
 Exp_literal_t *exp_literal_init(LiteralType type, void* value) {
     Exp_literal_t *e = mem_calloc(1, sizeof(Exp_literal_t));
     e->type = type;
-    e->value = value;
+    switch(type) {
+        case T_STRING: {
+            e->value = strdup(value);
+            break;
+        }
+        case T_NUMBER: {
+            double *n = mem_calloc(1, sizeof(double));
+            *n = atof(value);
+            e->value = n;
+            break;
+        }    
+        case T_NIL:
+        case T_BOOLEAN: {
+            e->value = value;
+            break;
+        }
+    }
     return e;
 }
 
@@ -40,22 +57,26 @@ Exp_grouping_t *exp_grouping_init(Exp_t* exp) {
 void exp_binary_destroy(Exp_binary_t *exp) {
     exp_destroy(exp->left);
     exp_destroy(exp->right);
+    free(exp);
     return; 
 }
 
 void exp_unary_destroy(Exp_unary_t *exp) {
     exp_destroy(exp->right);
+    free(exp);
     return;
 }
 
 void exp_literal_destroy(Exp_literal_t *exp) {
     if(exp->type != T_NIL)
         free(exp->value);
+    free(exp);
     return;
 }
 
 void exp_groping_destroy(Exp_grouping_t * exp) {
     exp_destroy(exp->exp);
+    free(exp);
     return;
 }
 
@@ -75,10 +96,9 @@ void exp_destroy(Exp_t *exp) {
             exp_groping_destroy((Exp_grouping_t*)exp->exp);
             break;
         case EXP_PANIC_MODE: 
-            // nothing to do
+            free(exp->exp);
             break;
     }
-    free(exp->exp);
     free(exp);
 }
 

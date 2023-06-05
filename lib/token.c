@@ -5,14 +5,13 @@
 #include <stdio.h>
 #include <string.h>
 
-static char* pretty_type(int);
+static char* pretty_type(TokenType);
 
 void token_free(void *token) {
     Token *t = (Token*)token;
     if(t->lexeme && t->type != END)
         free(t->lexeme);
-    if(t->type == IDENTIFIER || t->type == NUMBER || t->type == STRING)
-        free(t->literal);
+    free(t->literal);
     free(token);
     return;
 }
@@ -43,20 +42,19 @@ Token *tokens_get(List tokens, int index) {
 
 void tokens_dup(List source, List *dest) {
     List head = source;
-    list_reverse_in_place(&head);
     while(head) {
         Token *duped = mem_calloc(1, sizeof(Token));
         Token *tok = (Token*)head->data;
         duped->line = tok->line;
         duped->type = tok->type;
-        duped->lexeme = strdup(tok->lexeme);
+        duped->lexeme = tok->type != END ? strdup(tok->lexeme) : "";
         duped->literal = tok->literal ? strdup(tok->literal) : NULL;
         list_add(dest, duped);
         head = head->next;
     }
 }
 
-char *pretty_type(int type) {
+char *pretty_type(TokenType type) {
     switch(type) {
         case LEFT_PAREN:
             return "LEFT_PAREN";
@@ -142,6 +140,8 @@ char *pretty_type(int type) {
             return "MATCH";
         case WITH:
             return "WITH";
+        case WILDCARD:
+            return "WILDCARD";
         default:
             return "UNKOWN";
     }

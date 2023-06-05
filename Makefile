@@ -1,6 +1,7 @@
 SHELL		:=	/bin/bash
 CC			:=	gcc
-CFLAGS		:=	-g -Wall -pedantic -Wextra
+CFLAGS		:=	-g -Wall -pedantic -Wextra -Werror
+VFLAGS		:= 	--leak-check=full --track-origins=yes
 
 # Targets
 main_c		:= ./src/main.c
@@ -39,7 +40,7 @@ errors_o	:= ./lib/errors.o
 objects		:= 	$(main_o) $(list_o) $(scanner_o) $(parser_o) $(token_o) $(syntax_o) $(errors_o) $(memory_o)
 executable	:= lambda
 
-.PHONY		:=	clean valgring
+.PHONY		:=	clean valgring clean_logs
 
 
 $(executable): $(objects)
@@ -59,4 +60,9 @@ clean:
 	-@rm -f src/*.o lib/*.o $(executable)
 
 valgrind: $(executable)
-	-@valgrind --leak-check=full --track-origins=yes --log-file=lambda.log ./lambda example
+	-@valgrind $(VFLAGS) --log-file=./logs/lambda-arithmetic-%p-%n.log ./$(executable) ./test/arithmetic
+	-@valgrind $(VFLAGS) --log-file=./logs/lambda-functions-%p-%n.log ./$(executable) ./test/functions
+	-@valgrind $(VFLAGS) --log-file=./logs/lambda-string-%p-%n.log ./$(executable) ./test/string
+
+clean_logs:
+	-@rm -f ./logs/*.log

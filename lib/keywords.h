@@ -32,8 +32,9 @@
 #define K_LEFT_BRACE '{'
 #define K_RIGHT_BRACE '}'
 #define K_LEFT_SQUARE_BRACKET '['
-#define K_RIGHT_SQUARE_BRACKT ']'
+#define K_RIGHT_SQUARE_BRACKET ']'
 #define K_PIPE '|'
 #define K_DOUBLE_QUOTE '"'
+#define K_WILDCARD '_'
 
 #endif // !KEYWORDS_H

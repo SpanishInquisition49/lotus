@@ -48,7 +48,7 @@ typedef enum {
 
 /**
  * This type act as a wrapper around all the possible expression type
- * @note: proprer casting is required
+ * @note: proper casting is required
  */
 typedef struct {
     ExpType type;
@@ -105,8 +105,9 @@ typedef struct {
     Exp_t *else_brench;
 } Stmt_conditional_t;
 
+/*
 typedef struct {
-    // TODO
+    // TODO: write me
 } Stmt_match_t;
 
 typedef struct {
@@ -115,8 +116,9 @@ typedef struct {
 } Stmt_let_t;
 
 typedef struct {
-    // TODO
+    // TODO: write me
 } Stmt_fun_t;
+*/
 
 Operator token_to_operator(Token);
 
