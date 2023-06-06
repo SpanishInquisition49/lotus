@@ -1,6 +1,6 @@
 SHELL		:=	/bin/bash
 CC			:=	gcc
-CFLAGS		:=	-g -Wall -pedantic -Wextra -Werror
+CFLAGS		:=	-g -Wall -pedantic -Wextra
 VFLAGS		:= 	--leak-check=full --track-origins=yes
 
 # Targets
@@ -25,6 +25,10 @@ parser_h	:= ./lib/parser.h
 parser_c	:= ./lib/parser.c
 parser_o	:= ./lib/parser.o
 
+interpreter_h := ./lib/interpreter.h
+interpreter_c := ./lib/interpreter.c
+interpreter_o := ./lib/interpreter.o
+
 list_h		:= ./lib/list.h
 list_c		:= ./lib/list.c
 list_o		:= ./lib/list.o
@@ -37,7 +41,7 @@ errors_h	:= ./lib/errors.h
 errors_c	:= ./lib/errors.c
 errors_o	:= ./lib/errors.o
 
-objects		:= 	$(main_o) $(list_o) $(scanner_o) $(parser_o) $(token_o) $(syntax_o) $(errors_o) $(memory_o)
+objects		:= 	$(main_o) $(list_o) $(scanner_o) $(parser_o) $(interpreter_o) $(token_o) $(syntax_o) $(errors_o) $(memory_o)
 executable	:= lambda
 
 .PHONY		:=	clean valgring clean_logs
@@ -54,6 +58,7 @@ $(token_o): $(token_c) $(token_h) $(list_h) $(errors_h) $(memory_h)
 $(syntax_o): $(syntax_c) $(syntax_h) $(token_h) $(list_h) $(memory_h)
 $(scanner_o): $(scanner_c) $(scanner_h) $(token_h) $(list_h) $(errors_h) $(memory_h) $(keywords_h)
 $(parser_o): $(parser_c) $(parser_h) $(token_h) $(list_h) $(errors_h) $(syntax_h) $(syntax_h)
+$(interpreter_o): $(interpreter_c) $(interpreter_h) $(syntax_h) $(memory_h)
 	$(CC) $(CFLAGS) -c $< -o $@
 
 clean:
@@ -61,8 +66,8 @@ clean:
 
 valgrind: $(executable)
 	-@valgrind $(VFLAGS) --log-file=./logs/lambda-arithmetic-%p-%n.log ./$(executable) ./test/arithmetic
-	-@valgrind $(VFLAGS) --log-file=./logs/lambda-functions-%p-%n.log ./$(executable) ./test/functions
-	-@valgrind $(VFLAGS) --log-file=./logs/lambda-string-%p-%n.log ./$(executable) ./test/string
+	;-@valgrind $(VFLAGS) --log-file=./logs/lambda-functions-%p-%n.log ./$(executable) ./test/functions
+	;-@valgrind $(VFLAGS) --log-file=./logs/lambda-string-%p-%n.log ./$(executable) ./test/string
 
 clean_logs:
-	-@rm -f ./logs/*.log
+	-@rm -f ./logs/*

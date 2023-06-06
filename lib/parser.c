@@ -16,7 +16,7 @@ static Exp_t *primary(Parser*);
 //static void synchronize(Parser*);
 static void throw_error(Parser*, char *);
 static void parser_log(Parser*);
-static int match(Parser*, ...);
+static int match(Parser*, int, ...);
 static int check(Parser*, TokenType);
 static int is_at_end(Parser*);
 static Token *previous(Parser*);
@@ -48,6 +48,10 @@ void parser_errors_report(Parser parser) {
     return;
 }
 
+int parser_had_errors(Parser p) {
+    return p.errors[ERROR] > 0;
+}
+
 void parser_destroy(Parser parser) {
     list_free(parser.tokens, token_free);
     return;
@@ -60,8 +64,8 @@ Exp_t *expression(Parser *p) {
 Exp_t *equality(Parser *p) {
     Exp_t *expr = NULL;
     expr = comparison(p);
-    while(match(p, BANG_EQUAL, EQUAL_EQUAL)) {
-        Token *prev = (previous(p));
+    while(match(p, 2, BANG_EQUAL, EQUAL_EQUAL)) {
+        Token *prev = previous(p);
         Exp_t *right = comparison(p);
         Operator op = OP_ERROR;
         if(prev)
@@ -78,7 +82,7 @@ Exp_t *equality(Parser *p) {
 Exp_t *comparison(Parser *p) {
     Exp_t *expr = NULL; 
     expr = term(p);
-    while(match(p, GREATER, GREATER_EQUAL, LESS, LESS_EQUAL)) {
+    while(match(p, 4, GREATER, GREATER_EQUAL, LESS, LESS_EQUAL)) {
         Token *prev = previous(p);
         Exp_t *right = term(p);
         Operator op = OP_ERROR;
@@ -95,7 +99,7 @@ Exp_t *comparison(Parser *p) {
 Exp_t *term(Parser *p) {
     Exp_t *expr = NULL;
     expr = factor(p);
-    while(match(p, MINUS, PLUS)) {
+    while(match(p, 2, MINUS, PLUS)) {
         Token *prev = previous(p);
         Exp_t *right = factor(p);
         Operator op = OP_ERROR;
@@ -112,7 +116,7 @@ Exp_t *term(Parser *p) {
 Exp_t *factor(Parser *p) {
    Exp_t *expr = NULL;
    expr = unary(p);
-   while(match(p, SLASH, STAR)) {
+   while(match(p, 2, SLASH, STAR)) {
         Token *prev = previous(p);
         Exp_t *right = unary(p);
         Operator op = OP_ERROR;
@@ -127,7 +131,7 @@ Exp_t *factor(Parser *p) {
 }
 
 Exp_t *unary(Parser* p) {
-    if(match(p, BANG, MINUS)) {
+    if(match(p, 2, BANG, MINUS)) {
         Token *prev = previous(p);
         Exp_t *right = unary(p);
         Operator op = OP_ERROR;
@@ -142,26 +146,26 @@ Exp_t *unary(Parser* p) {
 }
 
 Exp_t *primary(Parser *p) {
-    if(match(p, FALSE)) {
+    if(match(p, 1, FALSE)) {
         int *value = mem_calloc(1, sizeof(int));
         *value = 0;
         Exp_literal_t *e = exp_literal_init(T_BOOLEAN, value);
         return exp_init(EXP_LITERAL, e);
     }
-    if(match(p, TRUE)) {
+    if(match(p, 1, TRUE)) {
         int *value = mem_calloc(1, sizeof(int));
         *value = 1;
         Exp_literal_t *e = exp_literal_init(T_BOOLEAN, value);
         return exp_init(EXP_LITERAL, e);
     }
-    if(match(p, NIL)) 
+    if(match(p, 1, NIL)) 
         return exp_init(EXP_LITERAL, exp_literal_init(T_NIL, NULL));
-    if(match(p, NUMBER))
+    if(match(p, 1, NUMBER))
         return exp_init(EXP_LITERAL, exp_literal_init(T_NUMBER, previous(p)->literal));
-    if(match(p, STRING))
+    if(match(p, 1, STRING))
         return exp_init(EXP_LITERAL, exp_literal_init(T_STRING, previous(p)->literal));
 
-    if(match(p, LEFT_PAREN)) {
+    if(match(p, 1, LEFT_PAREN)) {
         Exp_t *expr = expression(p);
         if(consume(p, RIGHT_PAREN, "Expected ')' after expression.\n") == NULL)
             return exp_init(EXP_PANIC_MODE, NULL);
@@ -192,19 +196,20 @@ Exp_t *primary(Parser *p) {
     return;
 }*/
 
-int match(Parser *p, ...) {
+int match(Parser *p, int params_number, ...) {
+    int hit = 0;
     va_list tokens;
-    va_start(tokens, p);
-    int token = 0;
-    while((token = va_arg(tokens, int))) {
+    va_start(tokens, params_number);
+    for(int i=0; i<params_number; i++) {
+        TokenType token = va_arg(tokens, TokenType);
         if(check(p, token)) {
             advance(p);
-            va_end(tokens);
-            return 1;
+            hit = 1;
+            break;
         }
     }
     va_end(tokens);
-    return 0;
+    return hit;
 }
 
 int check(Parser *p, TokenType token) {

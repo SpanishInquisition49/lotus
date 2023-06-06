@@ -57,6 +57,7 @@ typedef struct {
 
 Exp_t *exp_init(ExpType, void*);
 void exp_destroy(Exp_t*);
+void *exp_unwrap(Exp_t*);
 
 typedef struct {
     Operator op;

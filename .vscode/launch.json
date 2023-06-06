@@ -8,7 +8,7 @@
       "program": "${workspaceFolder}/lambda",
       "cwd": "${workspaceFolder}",
       "args": [
-        "${workspaceFolder}/tests/arithmetic"
+          "${workspaceFolder}/test/arithmetic"
       ]
     }
   ]

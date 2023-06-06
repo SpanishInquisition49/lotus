@@ -3,6 +3,10 @@
 #include "token.h"
 #include <string.h>
 
+void *exp_unwrap(Exp_t *exp) {
+    return exp->exp;
+}
+
 Exp_t *exp_init(ExpType t, void *exp) {
     Exp_t *e = mem_calloc(1, sizeof(Exp_t));
     e->type = t;
