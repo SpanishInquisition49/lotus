@@ -1,8 +1,0 @@
-let hello = "Hello from lambda PL!";
-
-if(hello != "Hola") {
-    print "Miss";
-}
-else {
-    print "Hit";
-}

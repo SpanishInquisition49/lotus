@@ -3,12 +3,12 @@
   "configurations": [
     {
       "type": "lldb",
-      "name": "lambda",
+      "name": "lotus",
       "request": "launch",
-      "program": "${workspaceFolder}/lambda",
+      "program": "${workspaceFolder}/lotus",
       "cwd": "${workspaceFolder}",
       "args": [
-          "${workspaceFolder}/test/arithmetic"
+          "${workspaceFolder}/test/arithmetic.lotus"
       ]
     }
   ]

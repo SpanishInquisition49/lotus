@@ -1,33 +1,31 @@
-# Lambda
+# Lotus
 
 ## Summary
 
-This is an interpreter written in C for a custom language (currently WIP). I want to achieve a multithreaded functional PL with optimizations for Pure code.
+This is an interpreter written in C for the Lotus language (*currently WIP*). I want to achieve a multithreaded functional PL with optimizations for Pure code.
 
-## Build
+## Makefile
 
-To build 
+Installation is easy if you are on a Unix system.
+For Windows users please get help.
+
+### To build 
 
 ```bash
-git clone https://github.com/SpanishInquisition49/lambda.git
-cd lambda
-make
+git clone https://github.com/SpanishInquisition49/lotus.git
+cd lotus
+make # Compile the project with the debug flag
 ```
 
-Usage
+### Usage
 ```bash
-./lambda [source_code]
+./lotus [source_code]
 ```
 
-Currently only a primitive version of the Lexer (scanner) and a even simpler parser are implemented.
+### Testing
+```bash
+make run_test # Run some test for the logic
+make valgrind # Run valgrind
+```
 
-## Syntax
-
-|  Grammar |
-| - |
-| let [identifier] = {expr} |
-| fun [identifier]\([formals]) => {expr} |
-| print {expr} |
-| match {expr} with {expr} |
-| nil |
-| if({expr}) {expr} *[else {expr}]* |
+Currently only simple arithmetic expression are supported.

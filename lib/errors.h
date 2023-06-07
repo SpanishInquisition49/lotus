@@ -24,4 +24,3 @@ void Log_set_level(enum LogLevel);
 //void Log_report()
 
 #endif // !ERRORS_H
-#define ERRORS_HERRORS_H

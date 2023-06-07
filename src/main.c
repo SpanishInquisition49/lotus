@@ -5,17 +5,19 @@
 #include "../lib/parser.h"
 #include "../lib/interpreter.h"
 #include "../lib/list.h"
+#include "../lib/config.h"
 
-List scanner(const char*);
-Exp_t *parser(List);
-void interpreter(Exp_t*);
+static List scanner(const char*);
+static Exp_t *parser(List);
+static void interpreter(Exp_t*);
+static void set_config(void);
 
 static int scanner_error = 0; 
 static int parser_error = 0;
 
 int main(int argc, char *argv[]) {
     // Input validation
-    Log_set_level(WARNING);
+    set_config();
     if(argc != 2) {
         printf("Usage: main [filename]\n");
         return EXIT_FAILURE;
@@ -77,3 +79,22 @@ void interpreter(Exp_t* ast) {
     interpreter_destroy(i);
     return;
 }
+
+void set_config(void) {
+   char *v = config_read("LOG_LEVEL");
+   int log_level;
+   if(v == NULL) {
+        Log_set_level(WARNING);
+        return;
+   }
+   if(strcmp(v, "INFO\n") == 0)
+       log_level = INFO;
+   else if(strcmp(v, "ERROR\n") == 0)
+        log_level = ERROR;
+   else
+    log_level = WARNING;
+   free(v);
+   Log_set_level(log_level);
+   return;
+}
+

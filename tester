@@ -1,0 +1,49 @@
+#!/bin/bash
+
+##############
+#   COLORS   #
+##############
+NOCOLOR='\e[0m'
+RED='\e[0;31m'
+GREEN='\e[0;32m'
+DARKGRAY='\e[0;30m'
+YELLOW='\e[0;33m'
+MAGENTA='\e[0;35m'
+
+# $1 Test Title
+# $2 Program to run
+# $3 Assertion
+# $* Input
+RunTestSuite() {
+    local title=$1
+    local program=$2
+    local assertion=$3
+    shift 3
+    local startTime=`date +%s%N`
+    $program $* &> .output
+    local exitStatus=$?
+    local endTime=`date +%s%N`
+    local runtime=$(((endTime-startTime)/1000000))
+    echo -e "${YELLOW}Test:${NOCOLOR} $title"
+    local differences=$(diff <(echo "$assertion") <(cat .output))
+    if [ "$differences" == "" ]; then
+        echo -e "${GREEN}  Pass\t[Exit Status: $exitStatus] [$runtime ms]${NOCOLOR}"
+    else
+        echo -e "${RED}  Fail\t[Exit Status: $exitStatus] [$runtime ms]${NOCOLOR}"
+        echo -e "${DARKGREY}Output:${NOCOLOR}"
+        echo -e "$(cat .output)"
+        echo -e "${DARKGREY}Expected Output:${NOCOLOR}"
+        echo -e "$assertion"
+    fi
+    #rm .output
+}
+
+
+executable=lotus
+
+echo -e "${MAGENTA}Running tests ${NOCOLOR}"
+
+RunTestSuite "'-15*2/5 == 15*2/5*(-1)' should evaluate to true" ./$executable "$(cat ./test/.arithmetic-output)" ./test/arithmetic.lotus
+RunTestSuite "'\"Hello\" != \"World\"' should evaluate to true" ./$executable "$(cat ./test/.string-output)" ./test/string.lotus
+
+exit 0

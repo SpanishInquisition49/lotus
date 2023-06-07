@@ -1,17 +1,21 @@
+#include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 #include "interpreter.h"
 #include "syntax.h"
 #include "memory.h"
+#include "errors.h"
 
-static void value_destroy(Value*);
 static Value *eval(Interpreter*, Exp_t*);
-static Value *eval_literal(Interpreter*, Exp_t*);
+static Value *eval_literal(Exp_t*);
 static Value *eval_grouping(Interpreter*, Exp_t*);
 static Value *eval_unary(Interpreter*, Exp_t*);
 static Value *eval_binary(Interpreter*, Exp_t*);
 
-static int is_equal(Value*, Value*);
+static int is_equal(Interpreter*, Value*, Value*);
+static int is_truthy(Interpreter*, Value*);
 
+static void raise_runtime_error(Interpreter*, char*);
 
 void interpreter_init(Interpreter *interpreter, Exp_t* ast) {
     interpreter->ast = ast;
@@ -38,14 +42,16 @@ Value *eval(Interpreter* i, Exp_t *exp) {
         case EXP_GROUPING:
             return eval_grouping(i, exp);
         case EXP_LITERAL:
-            return eval_literal(i, exp);
+            return eval_literal(exp);
+        default: // Unreachable
+            raise_runtime_error(i, "Unknown expression\n");
     }
 
     // Unreachable
     return NULL;
 }
 
-Value *eval_literal(Interpreter *i, Exp_t *exp) {
+Value *eval_literal(Exp_t *exp) {
     return (Value*)exp->exp;
 }
 
@@ -57,14 +63,23 @@ Value *eval_grouping(Interpreter* i, Exp_t *exp) {
 Value *eval_unary(Interpreter *i, Exp_t *exp) {
     Exp_unary_t *unwrapped_exp = exp_unwrap(exp);
     Value *right = eval(i, unwrapped_exp->right);
- 
+
     switch(unwrapped_exp->op) {
         case OP_MINUS:
+            if(right->type != T_NUMBER)
+                raise_runtime_error(i, "Type Error:\t Operand must be a number\n");
             *((double*)right->value) = -(*((double*)right->value));
             return right;
-        case OP_NOT:
-            *((int*)right->value) = !(*(int*)right->value);
+        case OP_NOT: {
+            int *value = mem_calloc(1, sizeof(int));
+            *value = !is_truthy(i, right);
+            exp_destroy(unwrapped_exp->right);
+            right = exp_literal_init(T_BOOLEAN, value);
+            unwrapped_exp->right = exp_init(EXP_LITERAL, right);
             return right;
+        }
+        default: // Theoretically unreachable
+            raise_runtime_error(i, "Unkown operation\n");
     }
 
     // Unreachable
@@ -78,18 +93,28 @@ Value *eval_binary(Interpreter *i, Exp_t *exp) {
 
     switch (unwrapped_exp->op) {
         case OP_MINUS:
+            if(left->type != T_NUMBER || right->type != T_NUMBER)
+                raise_runtime_error(i, "Type Error:\t Operands must be numbers\n");
             *((double*)left->value) = *((double*)left->value) - *((double*)right->value);
             return left;
         case OP_STAR:
+            if(left->type != T_NUMBER || right->type != T_NUMBER)
+                raise_runtime_error(i, "Type Error:\t Operands must be numbers\n");
             *((double*)left->value) = *((double*)left->value) * *((double*)right->value);
             return left;
         case OP_SLASH:
+            if(left->type != T_NUMBER || right->type != T_NUMBER)
+                raise_runtime_error(i, "Type Error:\t Operands must be numbers\n");
             *((double*)left->value) = *((double*)left->value) / *((double*)right->value);
             return left;
         case OP_PLUS:
+            if(left->type != T_NUMBER || right->type != T_NUMBER)
+                raise_runtime_error(i, "Type Error:\t Operands must be numbers\n");
             *((double*)left->value) = *((double*)left->value) + *((double*)right->value);
             return left;
         case OP_GREATER: {
+            if(left->type != T_NUMBER || right->type != T_NUMBER)
+                raise_runtime_error(i, "Type Error:\t Operands must be numbers\n");
             int *value = mem_calloc(1, sizeof(int));
             *value = *((double*)left->value) > *((double*)right->value);
             left = exp_literal_init(T_BOOLEAN, value);
@@ -98,6 +123,8 @@ Value *eval_binary(Interpreter *i, Exp_t *exp) {
             return left;
         }
         case OP_GREATER_EQUAL: {
+            if(left->type != T_NUMBER || right->type != T_NUMBER)
+                raise_runtime_error(i, "Type Error:\t Operands must be numbers\n");
             int *value = mem_calloc(1, sizeof(int));
             *value = *((double*)left->value) >= *((double*)right->value);
             exp_destroy(unwrapped_exp->left);
@@ -106,6 +133,8 @@ Value *eval_binary(Interpreter *i, Exp_t *exp) {
             return left;
         }
         case OP_LESS: {
+            if(left->type != T_NUMBER || right->type != T_NUMBER)
+                raise_runtime_error(i, "Type Error:\t Operands must be numbers\n");
             int *value = mem_calloc(1, sizeof(int));
             *value = *((double*)left->value) < *((double*)right->value);
             exp_destroy(unwrapped_exp->left);
@@ -114,6 +143,8 @@ Value *eval_binary(Interpreter *i, Exp_t *exp) {
             return left;
         }
         case OP_LESS_EQUAL: {
+            if(left->type != T_NUMBER || right->type != T_NUMBER)
+                raise_runtime_error(i, "Type Error:\t Operands must be numbers\n");
             int *value = mem_calloc(1, sizeof(int));
             *value = *((double*)left->value) <= *((double*)right->value);
             exp_destroy(unwrapped_exp->left);
@@ -123,7 +154,7 @@ Value *eval_binary(Interpreter *i, Exp_t *exp) {
         }
         case OP_EQUAL: {
             int *value = mem_calloc(1, sizeof(int));
-            *value = is_equal(left, right);
+            *value = is_equal(i, left, right);
             exp_destroy(unwrapped_exp->left);
             left = exp_literal_init(T_BOOLEAN, value);
             unwrapped_exp->left = exp_init(EXP_LITERAL, left);
@@ -131,21 +162,23 @@ Value *eval_binary(Interpreter *i, Exp_t *exp) {
         }
         case OP_NOT_EQUAL: {
             int *value = mem_calloc(1, sizeof(int));
-            *value = !is_equal(left, right);
+            *value = !is_equal(i, left, right);
             exp_destroy(unwrapped_exp->left);
             left = exp_literal_init(T_BOOLEAN, value);
             unwrapped_exp->left = exp_init(EXP_LITERAL, left);
             return left;
         }
+        default: // Theoretically unreachable
+            raise_runtime_error(i, "Unkown Operation\n");
     }
 
     // Unreachable
     return NULL;
 }
 
-int is_equal(Value *l, Value *r) {
-    // Todo: implement a type system better than this
-    if(l->type != r->type) return 0;
+int is_equal(Interpreter *i, Value *l, Value *r) {
+    if(l->type != r->type)
+        raise_runtime_error(i, "Type Error:\tComparison between 2 different type!\n");
 
     switch(l->type) {
         case T_NUMBER:
@@ -160,10 +193,20 @@ int is_equal(Value *l, Value *r) {
     return 0;
 }
 
-void value_destroy(Value *v) {
-    if(v->type != T_NIL)
-        free(v->value);
-    free(v);
-    return;
+int is_truthy(Interpreter *i, Value *v) {
+    switch(v->type) {
+        case T_BOOLEAN:
+            return *((int*)v->value);
+        default:
+            raise_runtime_error(i, "Type Error:\tImplicit casting is not permitted!\n");
+            // Unreachable
+            return 0;
+    }
 }
 
+
+void raise_runtime_error(Interpreter *i, char *msg) {
+    Log(ERROR, msg);
+    interpreter_destroy(*i);
+    exit(EXIT_FAILURE);
+}
