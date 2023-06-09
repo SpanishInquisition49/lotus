@@ -5,14 +5,13 @@
 typedef Exp_literal_t Value;
 
 typedef struct {
-    Exp_t *ast;
-    Value *result;
+    List statements;
 } Interpreter;
 
-void interpreter_init(Interpreter*, Exp_t*);
+void interpreter_init(Interpreter*, List);
 
 void interpreter_destroy(Interpreter);
 
 void interpreter_eval(Interpreter*);
 
-#endif // !INTERPRETER_HINTERPRETER_H
+#endif // !INTERPRETER_H

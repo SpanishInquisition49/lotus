@@ -3,6 +3,8 @@
 #include "token.h"
 #include <string.h>
 
+#pragma region Expressions
+
 void *exp_unwrap(Exp_t *exp) {
     return exp->exp;
 }
@@ -84,7 +86,6 @@ void exp_groping_destroy(Exp_grouping_t * exp) {
     return;
 }
 
-
 void exp_destroy(Exp_t *exp) {
     switch(exp->type) {
         case EXP_BINARY:
@@ -105,6 +106,65 @@ void exp_destroy(Exp_t *exp) {
     }
     free(exp);
 }
+
+#pragma endregion Expressions
+
+#pragma region Statements
+
+Stmt_t *stmt_init(StmtType type, void *stmt, int line) {
+    Stmt_t *s = mem_calloc(1, sizeof(Stmt_t));
+    s->type = type;
+    s->stmt = stmt;
+    s->line = line;
+    return s;
+}
+
+Stmt_print_t *stmt_print_init(Exp_t *exp) {
+    Stmt_print_t *s = mem_calloc(1, sizeof(Stmt_print_t));
+    s->exp = exp;
+    return s;
+}
+
+Stmt_expr_t *stmt_expr_init(Exp_t *exp) {
+    Stmt_expr_t *s = mem_calloc(1, sizeof(Stmt_expr_t));
+    s->exp = exp;
+    return s;
+}
+
+void stmt_print_destroy(Stmt_print_t * stmt) {
+    exp_destroy(stmt->exp);
+    free(stmt);
+    return;
+}
+
+void stmt_expr_destroy(Stmt_expr_t * stmt) {
+    exp_destroy(stmt->exp);
+    free(stmt);
+    return;
+}
+
+void stmt_free(void* s) {
+    stmt_destroy(s);
+}
+
+void *stmt_unwrap(Stmt_t *s) {
+    return s->stmt;
+}
+
+void stmt_destroy(Stmt_t *stmt) {
+    switch(stmt->type) {
+        case STMT_PRINT:
+            stmt_print_destroy((Stmt_print_t*)stmt->stmt);
+            break;
+        case STMT_EXPR:
+            stmt_expr_destroy((Stmt_expr_t*)stmt->stmt);
+            break;
+    }
+
+    free(stmt);
+}
+
+#pragma  endregion Statements
 
 Operator token_to_operator(Token t) {
     switch (t.type) {

@@ -2,6 +2,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include "interpreter.h"
+#include "list.h"
 #include "syntax.h"
 #include "memory.h"
 #include "errors.h"
@@ -12,24 +13,47 @@ static Value *eval_grouping(Interpreter*, Exp_t*);
 static Value *eval_unary(Interpreter*, Exp_t*);
 static Value *eval_binary(Interpreter*, Exp_t*);
 
+static void eval_stmt(Interpreter*, Stmt_t*);
+static void eval_stmt_exp(Interpreter*, Stmt_t*);
+static void eval_stmt_print(Interpreter*, Stmt_t*);
+
 static int is_equal(Interpreter*, Value*, Value*);
 static int is_truthy(Interpreter*, Value*);
+static void pretty_print(Value*);
 
 static void raise_runtime_error(Interpreter*, char*);
 
-void interpreter_init(Interpreter *interpreter, Exp_t* ast) {
-    interpreter->ast = ast;
-    interpreter->result = NULL;
+void interpreter_init(Interpreter *interpreter, List statements) {
+    interpreter->statements = statements;
     return;
 }
 
 void interpreter_destroy(Interpreter interpreter) {
-    exp_destroy(interpreter.ast);
+    list_free(interpreter.statements, stmt_free);
     return;
 }
 
 void interpreter_eval(Interpreter* interpreter) {
-    interpreter->result = eval(interpreter, interpreter->ast);
+    List stmts = interpreter->statements;
+    while(stmts) {
+        eval_stmt(interpreter, stmts->data);
+        stmts = stmts->next;
+    }
+    return;
+}
+
+void eval_stmt(Interpreter *i, Stmt_t* s) {
+    switch (s->type) {
+        case STMT_EXPR:
+            eval_stmt_exp(i, s);
+            break;
+        case STMT_PRINT:
+            eval_stmt_print(i, s);
+            break;
+        default:
+            raise_runtime_error(i, "Unimplemented Error\n");
+            break;
+    }
     return;
 }
 
@@ -176,6 +200,19 @@ Value *eval_binary(Interpreter *i, Exp_t *exp) {
     return NULL;
 }
 
+void eval_stmt_exp(Interpreter *i, Stmt_t *s) {
+    Stmt_expr_t *unwrapped_stmt = stmt_unwrap(s);
+    eval(i, unwrapped_stmt->exp);
+    return;
+}
+
+void eval_stmt_print(Interpreter *i, Stmt_t *s) {
+    Stmt_print_t *unwrapped_stmt = stmt_unwrap(s);
+    Value *v = eval(i, unwrapped_stmt->exp);
+    pretty_print(v);
+    return; 
+}
+
 int is_equal(Interpreter *i, Value *l, Value *r) {
     if(l->type != r->type)
         raise_runtime_error(i, "Type Error:\tComparison between 2 different type!\n");
@@ -204,6 +241,23 @@ int is_truthy(Interpreter *i, Value *v) {
     }
 }
 
+void pretty_print(Value *v) {
+    switch (v->type) {
+        case T_NUMBER:
+            printf("%f\n", *((double*)v->value));
+            break;
+        case T_STRING:
+            printf("%s\n", (char*)v->value);
+            break;
+        case T_NIL:
+            printf("nil\n");
+            break;
+        case T_BOOLEAN:
+            printf("%s\n", *((int*)v->value) ? "true" : "false");
+    }
+    fflush(stdout);
+    return;
+}
 
 void raise_runtime_error(Interpreter *i, char *msg) {
     Log(ERROR, msg);

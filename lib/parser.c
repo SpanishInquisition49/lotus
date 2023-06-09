@@ -2,6 +2,7 @@
 #include "memory.h"
 #include "token.h"
 #include "syntax.h"
+#include "list.h"
 #include <stdarg.h>
 #include <stdio.h>
 #include <string.h>
@@ -24,6 +25,10 @@ static Token *peek(Parser*);
 static Token *advance(Parser*);
 static Token *consume(Parser*, TokenType, char *);
 
+static Stmt_t *statement(Parser*);
+static Stmt_t *stmt_expr(Parser*);
+static Stmt_t *stmt_print(Parser*);
+
 void parser_init(Parser *parser, List tokens) {
     parser->current = 0;
     parser->tokens = tokens;
@@ -32,8 +37,13 @@ void parser_init(Parser *parser, List tokens) {
     return;
 }
 
-Exp_t *parser_generate_ast(Parser* parser) {
-    return expression(parser);
+List parser_parse(Parser* parser) {
+    List statements = NULL;
+    while(!is_at_end(parser)) {
+        list_add(&statements, statement(parser));        
+    }
+    list_reverse_in_place(&statements);
+    return statements;
 }
 
 void parser_errors_report(Parser parser) {
@@ -233,7 +243,7 @@ Token *previous(Parser *p) {
 Token *consume(Parser* p, TokenType type, char *msg) {
     if(check(p, type)) return advance(p);
     throw_error(p, msg) ;
-    return NULL;
+    return peek(p);
 }
 
 void throw_error(Parser *p, char *msg) {
@@ -256,3 +266,23 @@ int is_at_end(Parser* p) {
     return peek(p)->type == END;
 }
 
+Stmt_t *statement(Parser *p) {
+    if(match(p, 1, PRINT)) return stmt_print(p);
+
+    return stmt_expr(p);
+}
+
+Stmt_t *stmt_expr(Parser *p) {
+    Exp_t *exp = expression(p);
+    Token *t = consume(p, SEMICOLON, "Expected ';' after expression\n");
+    Stmt_expr_t *s = stmt_expr_init(exp);
+    return stmt_init(STMT_EXPR, s, t->line);
+}
+
+
+Stmt_t *stmt_print(Parser *p) {
+    Exp_t *value = expression(p);
+    Token *t = consume(p, SEMICOLON, "Expected ';' after value\n");
+    Stmt_print_t *s = stmt_print_init(value);
+    return stmt_init(STMT_PRINT, s, t->line);
+}

@@ -8,12 +8,13 @@
 #include "../lib/config.h"
 
 static List scanner(const char*);
-static Exp_t *parser(List);
-static void interpreter(Exp_t*);
+static List parser(List);
+static void interpreter(List);
 static void set_config(void);
 
 static int scanner_error = 0; 
 static int parser_error = 0;
+static int show_reports = 0;
 
 int main(int argc, char *argv[]) {
     // Input validation
@@ -27,12 +28,12 @@ int main(int argc, char *argv[]) {
         list_free(tokens, token_free);
         exit(EXIT_FAILURE);
     }
-    Exp_t *ast = parser(tokens);
+    List statements = parser(tokens);
     if(parser_error) {
-        exp_destroy(ast);
+        list_free(statements, stmt_free);
         exit(EXIT_FAILURE);
     }
-    interpreter(ast);
+    interpreter(statements);
     return EXIT_SUCCESS;
 }
 
@@ -42,40 +43,28 @@ List scanner(const char* filename) {
     scanner_scan_tokens(&scanner);
     List tokens = NULL;
     tokens_dup(scanner.tokens, &tokens);
-    scanner_errors_report(scanner);
     scanner_error = scanner_had_error(scanner);
+    if(show_reports || scanner_error)
+        scanner_errors_report(scanner);
     scanner_destroy(scanner);
     return tokens;
 }
 
-Exp_t *parser(List tokens) {
+List parser(List tokens) {
     Parser parser;
     parser_init(&parser, tokens);
-    Exp_t *ast = parser_generate_ast(&parser);
-    parser_errors_report(parser);
+    List statements = parser_parse(&parser);
     parser_error = parser_had_errors(parser);
+    if(show_reports || parser_error)
+        parser_errors_report(parser);
     parser_destroy(parser);
-    return ast;
+    return statements;
 }
 
-void interpreter(Exp_t* ast) {
+void interpreter(List statements) {
     Interpreter i;
-    interpreter_init(&i, ast);
+    interpreter_init(&i, statements);
     interpreter_eval(&i);
-    switch(i.result->type) {
-        case T_STRING:
-            printf("%s\n", (char*)i.result->value);
-            break;
-        case T_NIL:
-            printf("nil\n");
-            break;
-        case T_BOOLEAN:
-            printf("%s\n", *((int*)i.result->value) ? "true" : "false");
-            break;
-        case T_NUMBER:
-            printf("%f\n", *((double*)i.result->value));
-            break;
-    }
     interpreter_destroy(i);
     return;
 }
@@ -84,17 +73,26 @@ void set_config(void) {
    char *v = config_read("LOG_LEVEL");
    int log_level;
    if(v == NULL) {
-        Log_set_level(WARNING);
-        return;
+    log_level = WARNING;
    }
-   if(strcmp(v, "INFO\n") == 0)
+   else if(strcmp(v, "INFO\n") == 0)
        log_level = INFO;
    else if(strcmp(v, "ERROR\n") == 0)
         log_level = ERROR;
    else
     log_level = WARNING;
-   free(v);
+   if(v)
+    free(v);
    Log_set_level(log_level);
+   v = config_read("PRINT_REPORT");
+   if(v == NULL)
+    show_reports = 0;
+   else if(strcmp(v, "TRUE\n") == 0)
+    show_reports = 1;
+   else
+    show_reports = 0;
+   if(v)
+    free(v);
    return;
 }
 

@@ -3,6 +3,7 @@
 #include "list.h"
 #include "errors.h"
 #include "syntax.h"
+#include "list.h"
 
 typedef struct {
     List tokens;
@@ -14,7 +15,8 @@ void parser_init(Parser*, List tokens);
 
 void parser_destroy(Parser);
 
-Exp_t *parser_generate_ast(Parser*);
+List parser_parse(Parser*);
+
 
 void parser_errors_report(Parser);
 

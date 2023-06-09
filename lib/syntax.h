@@ -23,6 +23,8 @@ typedef enum {
     STMT_VAR,
     STMT_MATCH,
     STMT_FUN,
+    STMT_PRINT,
+    STMT_EXPR,
 } StmtType;
 
 typedef enum {
@@ -98,13 +100,33 @@ void exp_literal_destroy(Exp_literal_t*);
 typedef struct {
     void *stmt;
     StmtType type;
+    int line;
 } Stmt_t;
+
+Stmt_t *stmt_init(StmtType, void*, int);
+void stmt_destroy(Stmt_t*);
+void stmt_free(void*);
+void *stmt_unwrap(Stmt_t*);
 
 typedef struct {
     Exp_t *condition;
     Exp_t *then_brench;
     Exp_t *else_brench;
 } Stmt_conditional_t;
+
+typedef struct {
+    Exp_t *exp;
+} Stmt_print_t;
+
+Stmt_print_t *stmt_print_init(Exp_t*);
+void stmt_print_destroy(Stmt_print_t*);
+
+typedef struct {
+    Exp_t *exp;
+} Stmt_expr_t;
+
+Stmt_expr_t *stmt_expr_init(Exp_t*);
+void stmt_expr_destroy(Stmt_expr_t*);
 
 /*
 typedef struct {
