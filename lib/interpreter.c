@@ -1,3 +1,4 @@
+#include <iso646.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -16,6 +17,7 @@ static Value *eval_binary(Interpreter*, Exp_t*);
 static void eval_stmt(Interpreter*, Stmt_t*);
 static void eval_stmt_exp(Interpreter*, Stmt_t*);
 static void eval_stmt_print(Interpreter*, Stmt_t*);
+static void eval_stmt_conditional(Interpreter*, Stmt_t*);
 
 static int is_equal(Interpreter*, Value*, Value*);
 static int is_truthy(Interpreter*, Value*);
@@ -49,6 +51,9 @@ void eval_stmt(Interpreter *i, Stmt_t* s) {
             break;
         case STMT_PRINT:
             eval_stmt_print(i, s);
+            break;
+        case STMT_IF:
+            eval_stmt_conditional(i, s);
             break;
         default:
             raise_runtime_error(i, "Unimplemented Error\n");
@@ -211,6 +216,16 @@ void eval_stmt_print(Interpreter *i, Stmt_t *s) {
     Value *v = eval(i, unwrapped_stmt->exp);
     pretty_print(v);
     return; 
+}
+
+void eval_stmt_conditional(Interpreter *i, Stmt_t *s) {
+    Stmt_conditional_t *unwrapped_stmt = stmt_unwrap(s);
+    Value *cond = eval(i, unwrapped_stmt->condition);
+    if(is_truthy(i, cond))
+        eval_stmt(i, unwrapped_stmt->then_brench);
+    else
+        eval_stmt(i, unwrapped_stmt->else_brench);
+    return;
 }
 
 int is_equal(Interpreter *i, Value *l, Value *r) {

@@ -48,11 +48,11 @@ config_o	:= ./lib/config.o
 objects		:= 	$(main_o) $(list_o) $(scanner_o) $(parser_o) $(interpreter_o) $(token_o) $(syntax_o) $(errors_o) $(memory_o) $(config_o)
 executable	:= lotus
 
-.PHONY		:=	clean valgring clean_logs run_test
+.PHONY		:=	clean valgring clean_logs check
 
 
 $(executable): $(objects)
-	$(CC) $(CFLAGS) $^ -o $@
+	$(CC) $(CFLAGS) $^ -o $@ -lpthread
 
 $(main_o): $(main_c)
 $(list_o): $(list_c) $(list_h)
@@ -77,5 +77,5 @@ valgrind: $(executable)
 clean_logs:
 	-@rm -f ./logs/*
 
-run_test: $(executable)
+check: $(executable)
 	-@./tester

@@ -110,9 +110,12 @@ void *stmt_unwrap(Stmt_t*);
 
 typedef struct {
     Exp_t *condition;
-    Exp_t *then_brench;
-    Exp_t *else_brench;
+    Stmt_t *then_brench;
+    Stmt_t *else_brench;
 } Stmt_conditional_t;
+
+Stmt_conditional_t *stmt_conditional_init(Exp_t*, Stmt_t*, Stmt_t*);
+void stmt_conditional_destroy(Stmt_conditional_t*);
 
 typedef struct {
     Exp_t *exp;

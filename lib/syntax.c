@@ -131,6 +131,14 @@ Stmt_expr_t *stmt_expr_init(Exp_t *exp) {
     return s;
 }
 
+Stmt_conditional_t *stmt_conditional_init(Exp_t *exp_cond, Stmt_t *stmt_then, Stmt_t *stmt_else) {
+    Stmt_conditional_t *s = mem_calloc(1, sizeof(Stmt_conditional_t));
+    s->condition = exp_cond;
+    s->then_brench = stmt_then;
+    s->else_brench = stmt_else;
+    return s;
+}
+
 void stmt_print_destroy(Stmt_print_t * stmt) {
     exp_destroy(stmt->exp);
     free(stmt);
@@ -143,9 +151,18 @@ void stmt_expr_destroy(Stmt_expr_t * stmt) {
     return;
 }
 
+void stmt_conditional_destroy(Stmt_conditional_t *stmt) {
+    exp_destroy(stmt->condition);
+    stmt_destroy(stmt->then_brench);
+    if(stmt->else_brench != NULL)
+        stmt_destroy(stmt->else_brench);
+    return;
+}
+
 void stmt_free(void* s) {
     stmt_destroy(s);
 }
+
 
 void *stmt_unwrap(Stmt_t *s) {
     return s->stmt;
@@ -158,6 +175,9 @@ void stmt_destroy(Stmt_t *stmt) {
             break;
         case STMT_EXPR:
             stmt_expr_destroy((Stmt_expr_t*)stmt->stmt);
+            break;
+        case STMT_IF:
+            stmt_conditional_destroy((Stmt_conditional_t*)stmt->stmt);
             break;
     }
 

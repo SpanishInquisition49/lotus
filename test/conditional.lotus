@@ -1,0 +1,5 @@
+// This should evaluate the else brench
+if("foo" == "bar")
+    print "same";
+else
+    print "different";

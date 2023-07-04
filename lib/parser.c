@@ -14,7 +14,7 @@ static Exp_t *term(Parser*);
 static Exp_t *factor(Parser*);
 static Exp_t *unary(Parser*);
 static Exp_t *primary(Parser*);
-//static void synchronize(Parser*);
+static void synchronize(Parser*);
 static void throw_error(Parser*, char *);
 static void parser_log(Parser*);
 static int match(Parser*, int, ...);
@@ -28,6 +28,7 @@ static Token *consume(Parser*, TokenType, char *);
 static Stmt_t *statement(Parser*);
 static Stmt_t *stmt_expr(Parser*);
 static Stmt_t *stmt_print(Parser*);
+static Stmt_t *stmt_condition(Parser*);
 
 void parser_init(Parser *parser, List tokens) {
     parser->current = 0;
@@ -40,7 +41,7 @@ void parser_init(Parser *parser, List tokens) {
 List parser_parse(Parser* parser) {
     List statements = NULL;
     while(!is_at_end(parser)) {
-        list_add(&statements, statement(parser));        
+        list_add(&statements, statement(parser));
     }
     list_reverse_in_place(&statements);
     return statements;
@@ -100,7 +101,6 @@ Exp_t *comparison(Parser *p) {
             op = token_to_operator(*prev);
         Exp_binary_t *e = exp_binary_init(expr, op, right);
         expr = exp_init(EXP_BINARY, e);
-        //Log(INFO, "Created comparison expression\n");
         parser_log(p);
     }
     return expr;
@@ -117,7 +117,6 @@ Exp_t *term(Parser *p) {
             op = token_to_operator(*prev);
         Exp_binary_t *e = exp_binary_init(expr, op, right);
         expr = exp_init(EXP_BINARY, e);
-        //Log(INFO, "Created term expression\n");
         parser_log(p);
     }
     return expr;
@@ -134,7 +133,6 @@ Exp_t *factor(Parser *p) {
             op = token_to_operator(*prev);
         Exp_binary_t *e = exp_binary_init(expr, op, right);
         expr = exp_init(EXP_BINARY, e);
-        //Log(INFO, "Created factor expression\n");
         parser_log(p);
    }
    return expr;
@@ -148,7 +146,6 @@ Exp_t *unary(Parser* p) {
         if(prev)
             op = token_to_operator(*prev);
         Exp_unary_t *e = exp_unary_init(op, right);
-        //Log(INFO, "Created unary expression\n");
         parser_log(p);
         return exp_init(EXP_UNARY, e);
     }
@@ -187,7 +184,7 @@ Exp_t *primary(Parser *p) {
     return exp_init(EXP_PANIC_MODE, NULL);
 }
 
-/*void synchronize(Parser *p) {
+void synchronize(Parser *p) {
     advance(p);
     while(!is_at_end(p)) {
         if(previous(p)->type == SEMICOLON) return;
@@ -204,7 +201,7 @@ Exp_t *primary(Parser *p) {
         advance(p);
     }
     return;
-}*/
+}
 
 int match(Parser *p, int params_number, ...) {
     int hit = 0;
@@ -242,7 +239,7 @@ Token *previous(Parser *p) {
 
 Token *consume(Parser* p, TokenType type, char *msg) {
     if(check(p, type)) return advance(p);
-    throw_error(p, msg) ;
+    throw_error(p, msg);
     return peek(p);
 }
 
@@ -267,8 +264,8 @@ int is_at_end(Parser* p) {
 }
 
 Stmt_t *statement(Parser *p) {
+    if(match(p, 1, IF)) return stmt_condition(p);
     if(match(p, 1, PRINT)) return stmt_print(p);
-
     return stmt_expr(p);
 }
 
@@ -279,10 +276,22 @@ Stmt_t *stmt_expr(Parser *p) {
     return stmt_init(STMT_EXPR, s, t->line);
 }
 
-
 Stmt_t *stmt_print(Parser *p) {
     Exp_t *value = expression(p);
     Token *t = consume(p, SEMICOLON, "Expected ';' after value\n");
     Stmt_print_t *s = stmt_print_init(value);
     return stmt_init(STMT_PRINT, s, t->line);
 }
+
+Stmt_t *stmt_condition(Parser *p) {
+    Token *t = consume(p, LEFT_PAREN, "Expected '(' after if\n");
+    Exp_t *cond = expression(p);
+    t = consume(p, RIGHT_PAREN, "Expected ')' after condition");
+    Stmt_t *then_brench = statement(p);
+    Stmt_t *else_brench = NULL;
+    if(match(p, 1, ELSE))
+        else_brench = statement(p);
+    Stmt_conditional_t *s = stmt_conditional_init(cond, then_brench, else_brench);
+    return stmt_init(STMT_IF, s, t->line);
+}
+
