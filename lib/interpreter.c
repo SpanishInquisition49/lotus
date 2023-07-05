@@ -223,7 +223,7 @@ void eval_stmt_conditional(Interpreter *i, Stmt_t *s) {
     Value *cond = eval(i, unwrapped_stmt->condition);
     if(is_truthy(i, cond))
         eval_stmt(i, unwrapped_stmt->then_brench);
-    else
+    else if(unwrapped_stmt->else_brench != NULL)
         eval_stmt(i, unwrapped_stmt->else_brench);
     return;
 }
@@ -279,3 +279,4 @@ void raise_runtime_error(Interpreter *i, char *msg) {
     interpreter_destroy(*i);
     exit(EXIT_FAILURE);
 }
+
