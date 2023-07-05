@@ -2,6 +2,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <math.h>
 #include "interpreter.h"
 #include "list.h"
 #include "syntax.h"
@@ -18,6 +19,7 @@ static void eval_stmt(Interpreter*, Stmt_t*);
 static void eval_stmt_exp(Interpreter*, Stmt_t*);
 static void eval_stmt_print(Interpreter*, Stmt_t*);
 static void eval_stmt_conditional(Interpreter*, Stmt_t*);
+static void eval_stmt_block(Interpreter*, Stmt_t* );
 
 static int is_equal(Interpreter*, Value*, Value*);
 static int is_truthy(Interpreter*, Value*);
@@ -54,6 +56,9 @@ void eval_stmt(Interpreter *i, Stmt_t* s) {
             break;
         case STMT_IF:
             eval_stmt_conditional(i, s);
+            break;
+        case STMT_BLOCK:
+            eval_stmt_block(i, s);
             break;
         default:
             raise_runtime_error(i, "Unimplemented Error\n");
@@ -141,6 +146,12 @@ Value *eval_binary(Interpreter *i, Exp_t *exp) {
                 raise_runtime_error(i, "Type Error:\t Operands must be numbers\n");
             *((double*)left->value) = *((double*)left->value) + *((double*)right->value);
             return left;
+        case OP_MOD:
+            if(left->type != T_NUMBER || right->type != T_NUMBER){
+                raise_runtime_error(i, "Type Error:\t Operands must be numbers\n");
+            }
+            *((double*)left->value) = fmod(*((double*)left->value), *((double*)right->value));
+            return left;
         case OP_GREATER: {
             if(left->type != T_NUMBER || right->type != T_NUMBER)
                 raise_runtime_error(i, "Type Error:\t Operands must be numbers\n");
@@ -225,6 +236,16 @@ void eval_stmt_conditional(Interpreter *i, Stmt_t *s) {
         eval_stmt(i, unwrapped_stmt->then_brench);
     else if(unwrapped_stmt->else_brench != NULL)
         eval_stmt(i, unwrapped_stmt->else_brench);
+    return;
+}
+
+void eval_stmt_block(Interpreter *i, Stmt_t *s) {
+    Stmt_block_t *unwrapped_stmt = stmt_unwrap(s);
+    List stmts = unwrapped_stmt->statements;
+    while(stmts) {
+        eval_stmt(i, stmts->data);
+        stmts = stmts->next;
+    }
     return;
 }
 

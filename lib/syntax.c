@@ -139,6 +139,12 @@ Stmt_conditional_t *stmt_conditional_init(Exp_t *exp_cond, Stmt_t *stmt_then, St
     return s;
 }
 
+Stmt_block_t *stmt_block_init(List stmts) {
+    Stmt_block_t *s = mem_calloc(1, sizeof(Stmt_block_t));
+    s->statements = stmts;
+    return s;
+}
+
 void stmt_print_destroy(Stmt_print_t * stmt) {
     exp_destroy(stmt->exp);
     free(stmt);
@@ -156,6 +162,13 @@ void stmt_conditional_destroy(Stmt_conditional_t *stmt) {
     stmt_destroy(stmt->then_brench);
     if(stmt->else_brench != NULL)
         stmt_destroy(stmt->else_brench);
+    free(stmt);
+    return;
+}
+
+void stmt_block_destroy(Stmt_block_t *stmt) {
+    list_free(stmt->statements, stmt_free);
+    free(stmt);
     return;
 }
 
@@ -202,6 +215,8 @@ Operator token_to_operator(Token t) {
             return OP_GREATER_EQUAL;
         case PLUS:
             return OP_PLUS;
+        case MOD:
+            return OP_MOD;
         case MINUS:
             return OP_MINUS;
         case STAR:

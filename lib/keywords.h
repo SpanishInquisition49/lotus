@@ -21,6 +21,7 @@
 #define K_SLASH '/'
 #define K_PLUS '+'
 #define K_STAR '*'
+#define K_MOD '%'
 #define K_GREATER '>'
 #define K_LOWER '<'
 #define K_COMMA ','

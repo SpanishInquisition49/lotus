@@ -29,6 +29,7 @@ static Stmt_t *statement(Parser*);
 static Stmt_t *stmt_expr(Parser*);
 static Stmt_t *stmt_print(Parser*);
 static Stmt_t *stmt_condition(Parser*);
+static Stmt_t *stmt_block(Parser*);
 
 void parser_init(Parser *parser, List tokens) {
     parser->current = 0;
@@ -125,7 +126,7 @@ Exp_t *term(Parser *p) {
 Exp_t *factor(Parser *p) {
    Exp_t *expr = NULL;
    expr = unary(p);
-   while(match(p, 2, SLASH, STAR)) {
+   while(match(p, 3, SLASH, STAR, MOD)) {
         Token *prev = previous(p);
         Exp_t *right = unary(p);
         Operator op = OP_ERROR;
@@ -264,6 +265,7 @@ int is_at_end(Parser* p) {
 }
 
 Stmt_t *statement(Parser *p) {
+    if(match(p, 1, LEFT_BRACE)) return stmt_block(p);
     if(match(p, 1, IF)) return stmt_condition(p);
     if(match(p, 1, PRINT)) return stmt_print(p);
     return stmt_expr(p);
@@ -293,5 +295,16 @@ Stmt_t *stmt_condition(Parser *p) {
         else_brench = statement(p);
     Stmt_conditional_t *s = stmt_conditional_init(cond, then_brench, else_brench);
     return stmt_init(STMT_IF, s, t->line);
+}
+
+Stmt_t *stmt_block(Parser *p) { 
+    List statements = NULL;
+    while(!check(p, RIGHT_BRACE) && !is_at_end(p)) {
+        list_add(&statements, statement(p));
+    }
+    Token *t = consume(p, RIGHT_BRACE, "Missing '}' after opening a block\n");
+    list_reverse_in_place(&statements);
+    Stmt_block_t *s = stmt_block_init(statements);
+    return stmt_init(STMT_BLOCK, s, t->line);
 }
 

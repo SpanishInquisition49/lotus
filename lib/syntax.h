@@ -25,6 +25,7 @@ typedef enum {
     STMT_FUN,
     STMT_PRINT,
     STMT_EXPR,
+    STMT_BLOCK,
 } StmtType;
 
 typedef enum {
@@ -32,6 +33,7 @@ typedef enum {
     OP_PLUS,
     OP_MINUS,
     OP_STAR,
+    OP_MOD,
     OP_SLASH,
     OP_AND,
     OP_OR,
@@ -130,6 +132,13 @@ typedef struct {
 
 Stmt_expr_t *stmt_expr_init(Exp_t*);
 void stmt_expr_destroy(Stmt_expr_t*);
+
+typedef struct {
+    List statements;
+} Stmt_block_t;
+
+Stmt_block_t *stmt_block_init(List);
+void stmt_block_destry(Stmt_block_t*);
 
 /*
 typedef struct {

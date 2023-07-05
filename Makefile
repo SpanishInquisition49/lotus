@@ -52,7 +52,7 @@ executable	:= lotus
 
 
 $(executable): $(objects)
-	$(CC) $(CFLAGS) $^ -o $@ -lpthread
+	$(CC) $(CFLAGS) $^ -o $@ -lpthread -lm
 
 $(main_o): $(main_c)
 $(list_o): $(list_c) $(list_h)

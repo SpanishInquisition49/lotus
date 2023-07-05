@@ -117,6 +117,9 @@ void scan_token(Scanner *scanner, char c) {
         case K_STAR:
             add_token(scanner, STAR, NULL);
             break;
+        case K_MOD:
+            add_token(scanner, MOD, NULL);
+            break;
         case K_PIPE:
             add_token(scanner, PIPE, NULL);
             break;

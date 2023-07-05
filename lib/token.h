@@ -13,6 +13,7 @@ typedef enum {
     COMMA,
     DOT,
     PLUS,
+    MOD,
     SEMICOLON,
     COLON,
     SLASH,

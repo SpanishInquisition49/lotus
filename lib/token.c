@@ -76,6 +76,8 @@ char *pretty_type(TokenType type) {
             return "MINUS";
         case PLUS:
             return "PLUS";
+        case MOD:
+            return "MODULE";
         case SEMICOLON:
             return "SEMICOLON";
         case COLON:
