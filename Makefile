@@ -41,11 +41,15 @@ errors_h	:= ./lib/errors.h
 errors_c	:= ./lib/errors.c
 errors_o	:= ./lib/errors.o
 
+environment_h := ./lib/environment.h
+environment_c := ./lib/environment.c
+environment_o := ./lib/environment.o
+
 config_h	:= ./lib/config.h
 config_c	:= ./lib/config.c
 config_o	:= ./lib/config.o
 
-objects		:= 	$(main_o) $(list_o) $(scanner_o) $(parser_o) $(interpreter_o) $(token_o) $(syntax_o) $(errors_o) $(memory_o) $(config_o)
+objects		:= 	$(main_o) $(list_o) $(scanner_o) $(parser_o) $(interpreter_o) $(token_o) $(syntax_o) $(errors_o) $(memory_o) $(config_o) $(environment_o)
 executable	:= lotus
 
 .PHONY		:=	clean valgring clean_logs check
@@ -59,11 +63,12 @@ $(list_o): $(list_c) $(list_h)
 $(config_o): $(config_c) $(config_h)
 $(errors_o): $(errors_c) $(errors_h)
 $(memory_o): $(memory_c) $(memory_h)
+$(environment_o): $(environment_c) $(environment_h) $(memory_h)
 $(token_o): $(token_c) $(token_h) $(list_h) $(errors_h) $(memory_h)
 $(syntax_o): $(syntax_c) $(syntax_h) $(token_h) $(list_h) $(memory_h)
 $(scanner_o): $(scanner_c) $(scanner_h) $(token_h) $(list_h) $(errors_h) $(memory_h) $(keywords_h)
 $(parser_o): $(parser_c) $(parser_h) $(token_h) $(list_h) $(errors_h) $(syntax_h) $(syntax_h)
-$(interpreter_o): $(interpreter_c) $(interpreter_h) $(syntax_h) $(memory_h) $(errors_h)
+$(interpreter_o): $(interpreter_c) $(interpreter_h) $(syntax_h) $(memory_h) $(errors_h) $(environment_h)
 	$(CC) $(CFLAGS) -c $< -o $@
 
 clean:

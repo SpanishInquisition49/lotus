@@ -9,6 +9,7 @@ typedef enum {
     EXP_BINARY,
     EXP_LITERAL,
     EXP_GROUPING,
+    EXP_IDENTIFIER,
 } ExpType;
 
 typedef enum {
@@ -26,6 +27,8 @@ typedef enum {
     STMT_PRINT,
     STMT_EXPR,
     STMT_BLOCK,
+    STMT_DECLARATION,
+    STMT_ASSIGNMENT,
 } StmtType;
 
 typedef enum {
@@ -95,6 +98,13 @@ typedef struct {
 Exp_literal_t *exp_literal_init(LiteralType, void*);
 void exp_literal_destroy(Exp_literal_t*);
 
+typedef struct {
+    char *identifier;
+} Exp_identifier_t;
+
+Exp_identifier_t *exp_identifier_init(char*);
+void exp_identifer_destroy(Exp_identifier_t*);
+
 /********************************************************************
  *                          Statements                              *
  ********************************************************************/
@@ -140,20 +150,18 @@ typedef struct {
 Stmt_block_t *stmt_block_init(List);
 void stmt_block_destry(Stmt_block_t*);
 
-/*
 typedef struct {
-    // TODO: write me
-} Stmt_match_t;
+   char *identifier;
+   Exp_t *exp;
+} Stmt_declaration_t;
 
-typedef struct {
-    Exp_t *exp;
-    Exp_t *follow_up_exp;
-} Stmt_let_t;
+Stmt_declaration_t *stmt_declaration_init(char *, Exp_t*);
+void stmt_declaration_destroy(Stmt_declaration_t*);
 
-typedef struct {
-    // TODO: write me
-} Stmt_fun_t;
-*/
+typedef Stmt_declaration_t Stmt_assignement_t;
+
+Stmt_assignement_t *stmt_assignement_init(char*, Exp_t*);
+void stmt_assignement_destroy(Stmt_assignement_t*);
 
 Operator token_to_operator(Token);
 

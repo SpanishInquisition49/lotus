@@ -60,6 +60,14 @@ Exp_grouping_t *exp_grouping_init(Exp_t* exp) {
     return e;
 }
 
+Exp_identifier_t *exp_identifier_init(char *identifier) {
+    Exp_identifier_t *e = mem_calloc(1, sizeof(Exp_identifier_t));
+    char *ide = mem_calloc(1, strlen(identifier) * sizeof(char));
+    memcpy(ide, identifier, strlen(identifier) * sizeof(char));
+    e->identifier = ide;
+    return e;
+}
+
 void exp_binary_destroy(Exp_binary_t *exp) {
     exp_destroy(exp->left);
     exp_destroy(exp->right);
@@ -86,6 +94,12 @@ void exp_groping_destroy(Exp_grouping_t * exp) {
     return;
 }
 
+void exp_identifer_destroy(Exp_identifier_t *exp) {
+    free(exp->identifier);
+    free(exp);
+    return;
+}
+
 void exp_destroy(Exp_t *exp) {
     switch(exp->type) {
         case EXP_BINARY:
@@ -99,6 +113,9 @@ void exp_destroy(Exp_t *exp) {
             break;
         case EXP_GROUPING:
             exp_groping_destroy((Exp_grouping_t*)exp->exp);
+            break;
+        case EXP_IDENTIFIER:
+            exp_identifer_destroy((Exp_identifier_t*)exp->exp);
             break;
         case EXP_PANIC_MODE: 
             free(exp->exp);
@@ -145,6 +162,19 @@ Stmt_block_t *stmt_block_init(List stmts) {
     return s;
 }
 
+Stmt_declaration_t *stmt_declaration_init(char *identifier, Exp_t *exp) {
+    Stmt_declaration_t *s = mem_calloc(1, sizeof(Stmt_declaration_t));
+    char *ide = mem_calloc(1, strlen(identifier)*sizeof(char));
+    memcpy(ide, identifier, strlen(identifier)*sizeof(char));
+    s->identifier = ide;
+    s->exp = exp;
+    return s;
+}
+
+Stmt_assignement_t *stmt_assignement_init(char *identifier, Exp_t *exp) {
+    return stmt_declaration_init(identifier, exp);
+}
+
 void stmt_print_destroy(Stmt_print_t * stmt) {
     exp_destroy(stmt->exp);
     free(stmt);
@@ -172,6 +202,18 @@ void stmt_block_destroy(Stmt_block_t *stmt) {
     return;
 }
 
+void stmt_declaration_destroy(Stmt_declaration_t *stmt) {
+    exp_destroy(stmt->exp);
+    free(stmt->identifier);
+    free(stmt);
+    return;
+}
+
+void stmt_assignement_destroy(Stmt_assignement_t *stmt) {
+    stmt_declaration_destroy(stmt);
+    return;
+}
+
 void stmt_free(void* s) {
     stmt_destroy(s);
 }
@@ -192,9 +234,15 @@ void stmt_destroy(Stmt_t *stmt) {
         case STMT_IF:
             stmt_conditional_destroy((Stmt_conditional_t*)stmt->stmt);
             break;
+        case STMT_DECLARATION:
+            stmt_declaration_destroy((Stmt_declaration_t*)stmt->stmt);
+            break;
+        case STMT_ASSIGNMENT:
+            stmt_assignement_destroy((Stmt_assignement_t*)stmt->stmt);
     }
 
     free(stmt);
+    return;
 }
 
 #pragma  endregion Statements

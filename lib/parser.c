@@ -30,6 +30,8 @@ static Stmt_t *stmt_expr(Parser*);
 static Stmt_t *stmt_print(Parser*);
 static Stmt_t *stmt_condition(Parser*);
 static Stmt_t *stmt_block(Parser*);
+static Stmt_t *stmt_declaration(Parser*);
+static Stmt_t *stmt_assignement(Parser*);
 
 void parser_init(Parser *parser, List tokens) {
     parser->current = 0;
@@ -84,7 +86,6 @@ Exp_t *equality(Parser *p) {
             op = token_to_operator(*prev);
         Exp_binary_t *e = exp_binary_init(expr, op, right);
         expr = exp_init(EXP_BINARY, e);
-        //Log(INFO, "Created equality expression\n");
         parser_log(p);
 
     }
@@ -172,7 +173,8 @@ Exp_t *primary(Parser *p) {
         return exp_init(EXP_LITERAL, exp_literal_init(T_NUMBER, previous(p)->literal));
     if(match(p, 1, STRING))
         return exp_init(EXP_LITERAL, exp_literal_init(T_STRING, previous(p)->literal));
-
+    if(match(p, 1, IDENTIFIER))
+        return exp_init(EXP_IDENTIFIER, exp_identifier_init((char*)previous(p)->literal));
     if(match(p, 1, LEFT_PAREN)) {
         Exp_t *expr = expression(p);
         if(consume(p, RIGHT_PAREN, "Expected ')' after expression.\n") == NULL)
@@ -265,6 +267,8 @@ int is_at_end(Parser* p) {
 }
 
 Stmt_t *statement(Parser *p) {
+    if(match(p, 1, VAR)) return stmt_declaration(p);
+    if(match(p, 1, IDENTIFIER)) return stmt_assignement(p);
     if(match(p, 1, LEFT_BRACE)) return stmt_block(p);
     if(match(p, 1, IF)) return stmt_condition(p);
     if(match(p, 1, PRINT)) return stmt_print(p);
@@ -306,5 +310,23 @@ Stmt_t *stmt_block(Parser *p) {
     list_reverse_in_place(&statements);
     Stmt_block_t *s = stmt_block_init(statements);
     return stmt_init(STMT_BLOCK, s, t->line);
+}
+
+Stmt_t *stmt_declaration(Parser *p) {
+    Token *t = consume(p, IDENTIFIER, "Missing identifier after a declaration\n");
+    consume(p, EQUAL, "Missing '=' after declaration\n");
+    Exp_t *e = expression(p);
+    consume(p, SEMICOLON, "Expected ';' after value\n");
+    Stmt_declaration_t *s = stmt_declaration_init(t->literal, e);
+    return stmt_init(STMT_DECLARATION, s, t->line);
+}
+
+Stmt_t *stmt_assignement(Parser *p) {
+    char* ide = previous(p)->literal;
+    Token *t = consume(p, EQUAL, "Missing '=' between identifier and expression in assignement\n");
+    Exp_t *e = expression(p);
+    consume(p, SEMICOLON, "Missing ';' after assignement\n");
+    Stmt_assignement_t *s = stmt_assignement_init(ide, e);
+    return stmt_init(STMT_ASSIGNMENT, s, t->line);
 }
 
