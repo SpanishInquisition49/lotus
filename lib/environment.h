@@ -1,5 +1,6 @@
 #ifndef ENVIRONMENT_H
 #define ENVIRONMENT_H
+#include "list.h"
 
 typedef struct env_s{
     char *identifier;
@@ -14,6 +15,7 @@ void *env_set(Env*, char*, void*);
 Env *env_unbind(Env*);
 void env_destroy(Env*);
 Env *env_restore(Env*, Env*);
+Env *env_bulk_bind(Env*, List, List);
 
 #endif // !ENVIRONMENT_H
 #define ENVIRONMENT_H

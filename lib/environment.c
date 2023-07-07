@@ -2,6 +2,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include "environment.h"
+#include "errors.h"
 #include "memory.h"
 
 static int env_len(Env*);
@@ -26,7 +27,7 @@ Env* env_bind(Env *e, char *identifier, void *value) {
     Env *new = mem_calloc(1, sizeof(Env));
     new->prev = e;
     new->value = value;
-    new->identifier = identifier;
+    new->identifier = strdup(identifier);
     return new;
 }
 
@@ -71,9 +72,23 @@ void env_destroy(Env *e) {
 }
 
 Env *env_restore(Env *current, Env *original) {
-    int n = env_len(original);
+    int n = env_len(current) - env_len(original);
     for(int i=0; i<n; i++)
         current = env_unbind(current);
     return current;
 }
 
+Env *env_bulk_bind(Env *env, List identifiers, List values) {
+    Env *current_env = env;
+    List current_ide = identifiers;
+    List current_val = values;
+    while(current_ide != NULL && current_val != NULL) {
+        current_env = env_bind(current_env, current_ide->data, current_val->data);
+        current_val = current_val->next;
+        current_ide = current_ide->next;
+    }
+
+    if(current_ide != NULL || current_val != NULL)
+        return NULL;
+    return current_env;
+}

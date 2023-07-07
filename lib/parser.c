@@ -1,4 +1,5 @@
 #include "parser.h"
+#include "errors.h"
 #include "memory.h"
 #include "token.h"
 #include "syntax.h"
@@ -6,6 +7,7 @@
 #include <stdarg.h>
 #include <stdio.h>
 #include <string.h>
+#include <wchar.h>
 
 static Exp_t *expression(Parser*);
 static Exp_t *equality(Parser*);
@@ -14,6 +16,7 @@ static Exp_t *term(Parser*);
 static Exp_t *factor(Parser*);
 static Exp_t *unary(Parser*);
 static Exp_t *primary(Parser*);
+static Exp_t *call(Parser*);
 static void synchronize(Parser*);
 static void throw_error(Parser*, char *);
 static void parser_log(Parser*);
@@ -23,6 +26,7 @@ static int is_at_end(Parser*);
 static Token *previous(Parser*);
 static Token *peek(Parser*);
 static Token *advance(Parser*);
+static Token *back(Parser*);
 static Token *consume(Parser*, TokenType, char *);
 
 static Stmt_t *statement(Parser*);
@@ -31,7 +35,8 @@ static Stmt_t *stmt_print(Parser*);
 static Stmt_t *stmt_condition(Parser*);
 static Stmt_t *stmt_block(Parser*);
 static Stmt_t *stmt_declaration(Parser*);
-static Stmt_t *stmt_assignement(Parser*);
+static Stmt_t *stmt_assignment(Parser*);
+static Stmt_t *stmt_function_declaration(Parser*);
 
 void parser_init(Parser *parser, List tokens) {
     parser->current = 0;
@@ -151,6 +156,27 @@ Exp_t *unary(Parser* p) {
         parser_log(p);
         return exp_init(EXP_UNARY, e);
     }
+    return call(p);
+}
+
+Exp_t *call(Parser *p) {
+    if(!match(p, 1, IDENTIFIER))
+        return primary(p);
+    char *ide = previous(p)->literal;
+    if(match(p, 1, LEFT_PAREN)) {
+        List actuals = NULL;
+        while(!check(p, RIGHT_PAREN) && !is_at_end(p)) {
+            Exp_t *actual = expression(p);
+            list_add(&actuals, actual);
+            if(check(p, RIGHT_PAREN))
+                break;
+            consume(p, COMMA, "Missing ',' between actuals\n");
+        }
+        consume(p, RIGHT_PAREN, "Missing ')' after actuals\n");
+        Exp_call_t *e = exp_call_init(ide,  actuals);
+        return exp_init(EXP_CALL, e);
+    }
+    back(p);
     return primary(p);
 }
 
@@ -232,6 +258,13 @@ Token *advance(Parser *p) {
     return previous(p);
 }
 
+Token *back(Parser *p) {
+    Token *old = peek(p);
+    p->current--;
+    return old;
+
+}
+
 Token *peek(Parser *p) {
     return tokens_get(p->tokens, p->current);
 }
@@ -268,7 +301,8 @@ int is_at_end(Parser* p) {
 
 Stmt_t *statement(Parser *p) {
     if(match(p, 1, VAR)) return stmt_declaration(p);
-    if(match(p, 1, IDENTIFIER)) return stmt_assignement(p);
+    if(match(p, 1, FUN)) return stmt_function_declaration(p);
+    if(check(p, IDENTIFIER)) return peek(p)->type == EQUAL ? stmt_assignment(p) : stmt_expr(p);
     if(match(p, 1, LEFT_BRACE)) return stmt_block(p);
     if(match(p, 1, IF)) return stmt_condition(p);
     if(match(p, 1, PRINT)) return stmt_print(p);
@@ -321,12 +355,30 @@ Stmt_t *stmt_declaration(Parser *p) {
     return stmt_init(STMT_DECLARATION, s, t->line);
 }
 
-Stmt_t *stmt_assignement(Parser *p) {
-    char* ide = previous(p)->literal;
-    Token *t = consume(p, EQUAL, "Missing '=' between identifier and expression in assignement\n");
+Stmt_t *stmt_assignment(Parser *p) {
+    char* ide = advance(p)->literal;
+    Token *t = consume(p, EQUAL, "Missing '=' between identifier and expression in assignment\n");
     Exp_t *e = expression(p);
-    consume(p, SEMICOLON, "Missing ';' after assignement\n");
-    Stmt_assignement_t *s = stmt_assignement_init(ide, e);
+    consume(p, SEMICOLON, "Missing ';' after assignment\n");
+    Stmt_assignment_t *s = stmt_assignment_init(ide, e);
     return stmt_init(STMT_ASSIGNMENT, s, t->line);
+}
+
+Stmt_t *stmt_function_declaration(Parser *p) {
+    Token *t = consume(p, IDENTIFIER, "Functions must have a name\n");
+    List formals = NULL;
+    consume(p, LEFT_PAREN, "Missing '(' after function name\n");
+    while(!check(p, RIGHT_PAREN) && !is_at_end(p)) {
+        if(match(p, 1, IDENTIFIER)) {
+            list_add(&formals, strdup(previous(p)->literal));
+        }
+        if(check(p, RIGHT_PAREN))
+            break;
+        consume(p, COMMA, "Missing ',' between formals\n");
+    }
+    consume(p, RIGHT_PAREN, "Missing ')' after formals\n");
+    Stmt_t *body = statement(p);
+    Stmt_function_t *s = stmt_function_init(t->literal, formals, body);
+    return stmt_init(STMT_FUN, s, t->line);
 }
 

@@ -9,24 +9,28 @@
 #include "memory.h"
 #include "errors.h"
 
-static Value *eval(Interpreter*, Exp_t*, Env*);
+static Value *eval(Interpreter*, Exp_t*);
 static Value *eval_literal(Exp_t*);
-static Value *eval_grouping(Interpreter*, Exp_t*, Env*);
-static Value *eval_unary(Interpreter*, Exp_t*, Env*);
-static Value *eval_binary(Interpreter*, Exp_t*, Env*);
-static Value *eval_identifier(Interpreter*, Exp_t*, Env*);
+static Value *eval_grouping(Interpreter*, Exp_t*);
+static Value *eval_unary(Interpreter*, Exp_t*);
+static Value *eval_binary(Interpreter*, Exp_t*);
+static Value *eval_identifier(Interpreter*, Exp_t*);
+static Value *eval_call(Interpreter*, Exp_t*);
 
-static void eval_stmt(Interpreter*, Stmt_t*);
-static void eval_stmt_exp(Interpreter*, Stmt_t*);
-static void eval_stmt_print(Interpreter*, Stmt_t*);
-static void eval_stmt_conditional(Interpreter*, Stmt_t*);
-static void eval_stmt_block(Interpreter*, Stmt_t*);
-static void eval_stmt_declaration(Interpreter*, Stmt_t*);
-static void eval_stmt_assignement(Interpreter*, Stmt_t*);
+static Value *eval_stmt(Interpreter*, Stmt_t*);
+static Value *eval_stmt_exp(Interpreter*, Stmt_t*);
+static Value *eval_stmt_print(Interpreter*, Stmt_t*);
+static Value *eval_stmt_conditional(Interpreter*, Stmt_t*);
+static Value *eval_stmt_block(Interpreter*, Stmt_t*);
+static Value *eval_stmt_declaration(Interpreter*, Stmt_t*);
+static Value *eval_stmt_assignment(Interpreter*, Stmt_t*);
+static Value *eval_stmt_function(Interpreter*, Stmt_t*);
 
 static int is_equal(Interpreter*, Value*, Value*);
 static int is_truthy(Interpreter*, Value*);
+static void bulk_pretty_print(List);
 static void pretty_print(Value*);
+static Value *return_null(void);
 static Value *value_clone(Value*);
 static void value_destroy(Value*);
 
@@ -56,45 +60,42 @@ void interpreter_eval(Interpreter* interpreter) {
     return;
 }
 
-void eval_stmt(Interpreter *i, Stmt_t* s) {
+Value *eval_stmt(Interpreter *i, Stmt_t* s) {
     switch (s->type) {
         case STMT_EXPR:
-            eval_stmt_exp(i, s);
-            break;
+            return eval_stmt_exp(i, s);
         case STMT_PRINT:
-            eval_stmt_print(i, s);
-            break;
+            return eval_stmt_print(i, s);
         case STMT_IF:
-            eval_stmt_conditional(i, s);
-            break;
+            return eval_stmt_conditional(i, s);
         case STMT_BLOCK:
-            eval_stmt_block(i, s);
-            break;
+            return eval_stmt_block(i, s);
         case STMT_DECLARATION:
-            eval_stmt_declaration(i, s);
-            break;
+            return eval_stmt_declaration(i, s);
         case STMT_ASSIGNMENT:
-            eval_stmt_assignement(i, s);
-            break;
+            return eval_stmt_assignment(i, s);
+        case STMT_FUN:
+            return eval_stmt_function(i, s);
         default:
             raise_runtime_error(i, "Unimplemented Error\n");
-            break;
     }
-    return;
+    return return_null();
 }
 
-Value *eval(Interpreter* i, Exp_t *exp, Env *env) {
+Value *eval(Interpreter* i, Exp_t *exp) {
     switch(exp->type) {
         case EXP_UNARY:
-            return eval_unary(i, exp, env);
+            return value_clone(eval_unary(i, exp));
         case EXP_BINARY:
-            return eval_binary(i, exp, env);
+            return value_clone(eval_binary(i, exp));
         case EXP_GROUPING:
-            return eval_grouping(i, exp, env);
+            return value_clone(eval_grouping(i, exp));
         case EXP_LITERAL:
-            return eval_literal(exp);
+            return value_clone(eval_literal(exp));
         case EXP_IDENTIFIER:
-            return eval_identifier(i, exp, env);
+            return value_clone(eval_identifier(i, exp));
+        case EXP_CALL:
+            return value_clone(eval_call(i, exp));
         default: // Unreachable
             raise_runtime_error(i, "Unknown expression\n");
     }
@@ -107,22 +108,22 @@ Value *eval_literal(Exp_t *exp) {
     return (Value*)exp->exp;
 }
 
-Value *eval_identifier(Interpreter *i, Exp_t *exp, Env *env){
+Value *eval_identifier(Interpreter *i, Exp_t *exp){
     Exp_identifier_t *unwrapped_exp = exp_unwrap(exp);
-    Value *v = env_get(env, unwrapped_exp->identifier);
+    Value *v = env_get(i->environment, unwrapped_exp->identifier);
     if(v == NULL)
         raise_runtime_error(i, "Undeclared identifier\n");
     return v;
 }
 
-Value *eval_grouping(Interpreter* i, Exp_t *exp, Env *env) {
+Value *eval_grouping(Interpreter* i, Exp_t *exp) {
     Exp_grouping_t *unwrapped_exp = exp_unwrap(exp);
-    return eval(i, unwrapped_exp->exp,  env);
+    return eval(i, unwrapped_exp->exp);
 }
 
-Value *eval_unary(Interpreter *i, Exp_t *exp, Env *env) {
+Value *eval_unary(Interpreter *i, Exp_t *exp) {
     Exp_unary_t *unwrapped_exp = exp_unwrap(exp);
-    Value *right = eval(i, unwrapped_exp->right, env);
+    Value *right = eval(i, unwrapped_exp->right);
 
     switch(unwrapped_exp->op) {
         case OP_MINUS:
@@ -133,9 +134,9 @@ Value *eval_unary(Interpreter *i, Exp_t *exp, Env *env) {
         case OP_NOT: {
             int *value = mem_calloc(1, sizeof(int));
             *value = !is_truthy(i, right);
-            exp_destroy(unwrapped_exp->right);
+            //exp_destroy(unwrapped_exp->right);
             right = exp_literal_init(T_BOOLEAN, value);
-            unwrapped_exp->right = exp_init(EXP_LITERAL, right);
+            //unwrapped_exp->right = exp_init(EXP_LITERAL, right);
             return right;
         }
         default: // Theoretically unreachable
@@ -146,10 +147,10 @@ Value *eval_unary(Interpreter *i, Exp_t *exp, Env *env) {
     return NULL;
 }
 
-Value *eval_binary(Interpreter *i, Exp_t *exp, Env *env) {
+Value *eval_binary(Interpreter *i, Exp_t *exp) {
     Exp_binary_t *unwrapped_exp = exp_unwrap(exp);
-    Value *right = eval(i, unwrapped_exp->right, env);
-    Value *left = eval(i, unwrapped_exp->left, env);
+    Value *right = eval(i, unwrapped_exp->right);
+    Value *left = eval(i, unwrapped_exp->left);
 
     switch (unwrapped_exp->op) {
         case OP_MINUS:
@@ -184,8 +185,8 @@ Value *eval_binary(Interpreter *i, Exp_t *exp, Env *env) {
             int *value = mem_calloc(1, sizeof(int));
             *value = *((double*)left->value) > *((double*)right->value);
             left = exp_literal_init(T_BOOLEAN, value);
-            exp_destroy(unwrapped_exp->left);
-            unwrapped_exp->left = exp_init(EXP_LITERAL, left);
+            //exp_destroy(unwrapped_exp->left);
+            //unwrapped_exp->left = exp_init(EXP_LITERAL, left);
             return left;
         }
         case OP_GREATER_EQUAL: {
@@ -193,9 +194,9 @@ Value *eval_binary(Interpreter *i, Exp_t *exp, Env *env) {
                 raise_runtime_error(i, "Type Error:\t Operands must be numbers\n");
             int *value = mem_calloc(1, sizeof(int));
             *value = *((double*)left->value) >= *((double*)right->value);
-            exp_destroy(unwrapped_exp->left);
+            //exp_destroy(unwrapped_exp->left);
             left = exp_literal_init(T_BOOLEAN, value);
-            unwrapped_exp->left = exp_init(EXP_LITERAL, left);
+            //unwrapped_exp->left = exp_init(EXP_LITERAL, left);
             return left;
         }
         case OP_LESS: {
@@ -203,9 +204,9 @@ Value *eval_binary(Interpreter *i, Exp_t *exp, Env *env) {
                 raise_runtime_error(i, "Type Error:\t Operands must be numbers\n");
             int *value = mem_calloc(1, sizeof(int));
             *value = *((double*)left->value) < *((double*)right->value);
-            exp_destroy(unwrapped_exp->left);
+            //exp_destroy(unwrapped_exp->left);
             left = exp_literal_init(T_BOOLEAN, value);
-            unwrapped_exp->left = exp_init(EXP_LITERAL, left);
+            //unwrapped_exp->left = exp_init(EXP_LITERAL, left);
             return left;
         }
         case OP_LESS_EQUAL: {
@@ -213,25 +214,25 @@ Value *eval_binary(Interpreter *i, Exp_t *exp, Env *env) {
                 raise_runtime_error(i, "Type Error:\t Operands must be numbers\n");
             int *value = mem_calloc(1, sizeof(int));
             *value = *((double*)left->value) <= *((double*)right->value);
-            exp_destroy(unwrapped_exp->left);
+            //exp_destroy(unwrapped_exp->left);
             left = exp_literal_init(T_BOOLEAN, value);
-            unwrapped_exp->left = exp_init(EXP_LITERAL, left);
+            //unwrapped_exp->left = exp_init(EXP_LITERAL, left);
             return left;
         }
         case OP_EQUAL: {
             int *value = mem_calloc(1, sizeof(int));
             *value = is_equal(i, left, right);
-            exp_destroy(unwrapped_exp->left);
+            //exp_destroy(unwrapped_exp->left);
             left = exp_literal_init(T_BOOLEAN, value);
-            unwrapped_exp->left = exp_init(EXP_LITERAL, left);
+            //unwrapped_exp->left = exp_init(EXP_LITERAL, left);
             return left;
         }
         case OP_NOT_EQUAL: {
             int *value = mem_calloc(1, sizeof(int));
             *value = !is_equal(i, left, right);
-            exp_destroy(unwrapped_exp->left);
+            //exp_destroy(unwrapped_exp->left);
             left = exp_literal_init(T_BOOLEAN, value);
-            unwrapped_exp->left = exp_init(EXP_LITERAL, left);
+            //unwrapped_exp->left = exp_init(EXP_LITERAL, left);
             return left;
         }
         default: // Theoretically unreachable
@@ -242,54 +243,89 @@ Value *eval_binary(Interpreter *i, Exp_t *exp, Env *env) {
     return NULL;
 }
 
-void eval_stmt_exp(Interpreter *i, Stmt_t *s) {
+Value *eval_call(Interpreter *i, Exp_t *exp) {
+    Exp_call_t *unwrapped_exp = exp_unwrap(exp);
+    List values = NULL;
+    List expressions = unwrapped_exp->actuals;
+    while(expressions != NULL) {
+        list_add(&values, eval(i, expressions->data));
+        expressions = expressions->next;
+    }
+    list_reverse_in_place(&values);
+    Value *v = env_get(i->environment, unwrapped_exp->identifier);
+    if(v->type != T_CLOSURE)
+        raise_runtime_error(i, "The identifier is not a function name\n");
+    closure_t *closure = (closure_t*)v->value;
+    Env *old_env = i->environment;
+    i->environment = env_bulk_bind(i->environment, closure->formals, values);
+    Value *res = eval_stmt(i, closure->body);
+    i->environment = env_restore(i->environment, old_env);
+    return res;
+}
+
+Value *eval_stmt_exp(Interpreter *i, Stmt_t *s) {
     Stmt_expr_t *unwrapped_stmt = stmt_unwrap(s);
-    eval(i, unwrapped_stmt->exp, i->environment);
-    return;
+    return eval(i, unwrapped_stmt->exp);
 }
 
-void eval_stmt_print(Interpreter *i, Stmt_t *s) {
+Value *eval_stmt_print(Interpreter *i, Stmt_t *s) {
     Stmt_print_t *unwrapped_stmt = stmt_unwrap(s);
-    Value *v = eval(i, unwrapped_stmt->exp, i->environment);
+    Value *v = eval(i, unwrapped_stmt->exp);
     pretty_print(v);
-    return; 
+    return return_null(); 
 }
 
-void eval_stmt_conditional(Interpreter *i, Stmt_t *s) {
+Value *eval_stmt_conditional(Interpreter *i, Stmt_t *s) {
     Stmt_conditional_t *unwrapped_stmt = stmt_unwrap(s);
-    Value *cond = eval(i, unwrapped_stmt->condition, i->environment);
+    Value *cond = eval(i, unwrapped_stmt->condition);
+    Value *res = return_null();
     if(is_truthy(i, cond))
-        eval_stmt(i, unwrapped_stmt->then_brench);
+        res = eval_stmt(i, unwrapped_stmt->then_brench);
     else if(unwrapped_stmt->else_brench != NULL)
-        eval_stmt(i, unwrapped_stmt->else_brench);
-    return;
+        res = eval_stmt(i, unwrapped_stmt->else_brench);
+    return res;
 }
 
-void eval_stmt_block(Interpreter *i, Stmt_t *s) {
+Value *eval_stmt_block(Interpreter *i, Stmt_t *s) {
     Stmt_block_t *unwrapped_stmt = stmt_unwrap(s);
     List stmts = unwrapped_stmt->statements;
     Env *pre = i->environment;
+    Value *v = return_null();
     while(stmts) {
-        eval_stmt(i, stmts->data);
+        v = eval_stmt(i, stmts->data);
         stmts = stmts->next;
     }
     i->environment = env_restore(i->environment, pre);
-    return;
+    return v;
 }
 
-void eval_stmt_declaration(Interpreter *i, Stmt_t *s) {
+Value *eval_stmt_declaration(Interpreter *i, Stmt_t *s) {
     Stmt_declaration_t *unwrapped_stmt = stmt_unwrap(s);
-    Value *v = eval(i, unwrapped_stmt->exp, i->environment);
-    i->environment = env_bind(i->environment, unwrapped_stmt->identifier, value_clone(v));
-    return;
+    Value *v = eval(i, unwrapped_stmt->exp);
+    i->environment = env_bind(i->environment, unwrapped_stmt->identifier, v);
+    return return_null();
 }
 
-void eval_stmt_assignement(Interpreter *i, Stmt_t *s) {
-    Stmt_assignement_t *unwrapped_stmt = stmt_unwrap(s);
-    Value *res = eval(i, unwrapped_stmt->exp, i->environment);
-    Value *old = env_set(i->environment, unwrapped_stmt->identifier, value_clone(res));
+Value *eval_stmt_assignment(Interpreter *i, Stmt_t *s) {
+    Stmt_assignment_t *unwrapped_stmt = stmt_unwrap(s);
+    Value *res = eval(i, unwrapped_stmt->exp);
+    Value *old = env_set(i->environment, unwrapped_stmt->identifier, res);
     value_destroy(old);
-    return;
+    return return_null();
+}
+
+Value *eval_stmt_function(Interpreter *i, Stmt_t *s) {
+    Stmt_function_t *unwrapped_stmt = stmt_unwrap(s);
+    closure_t *closure = mem_calloc(1, sizeof(closure_t));
+    closure->identifier = strdup(unwrapped_stmt->identifier);
+    closure->formals = list_dup(unwrapped_stmt->formals);
+    closure->body = unwrapped_stmt->body;
+    Value *v = mem_calloc(1, sizeof(Value));
+    v->type = T_CLOSURE;
+    v->value = closure;
+    unwrapped_stmt->body = NULL;
+    i->environment = env_bind(i->environment, unwrapped_stmt->identifier, v);
+    return return_null();
 }
 
 Value *value_clone(Value *v) {
@@ -319,6 +355,13 @@ Value *value_clone(Value *v) {
             break;
     }
     return val;
+}
+
+Value *return_null(void) {
+    Value *v = mem_calloc(1, sizeof(Value));
+    v->type = T_NIL;
+    v->value = NULL;
+    return v;
 }
 
 void value_destroy(Value *v) {
@@ -374,6 +417,16 @@ void pretty_print(Value *v) {
             printf("%s\n", *((int*)v->value) ? "true" : "false");
     }
     fflush(stdout);
+    return;
+}
+
+
+void bulk_pretty_print(List values) {
+    List value = values;
+    while(value != NULL) {
+        pretty_print(value->data);
+        value = value->next;
+    }
     return;
 }
 

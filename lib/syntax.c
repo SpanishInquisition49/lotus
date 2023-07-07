@@ -1,4 +1,5 @@
 #include "syntax.h"
+#include "list.h"
 #include "memory.h"
 #include "token.h"
 #include <string.h>
@@ -68,6 +69,15 @@ Exp_identifier_t *exp_identifier_init(char *identifier) {
     return e;
 }
 
+Exp_call_t *exp_call_init(char *identifer, List actuals) {
+    Exp_call_t *e = mem_calloc(1, sizeof(Exp_call_t));
+    char *ide = mem_calloc(1, strlen(identifer) * sizeof(char));
+    memcpy(ide, identifer, strlen(identifer) * sizeof(char));
+    e->identifier = ide;
+    e->actuals = actuals;
+    return e;
+}
+
 void exp_binary_destroy(Exp_binary_t *exp) {
     exp_destroy(exp->left);
     exp_destroy(exp->right);
@@ -100,6 +110,12 @@ void exp_identifer_destroy(Exp_identifier_t *exp) {
     return;
 }
 
+void exp_call_destroy(Exp_call_t *exp) {
+    free(exp->identifier);
+    //list_free(exp->actuals, exp_free);
+    free(exp);
+}
+
 void exp_destroy(Exp_t *exp) {
     switch(exp->type) {
         case EXP_BINARY:
@@ -117,11 +133,18 @@ void exp_destroy(Exp_t *exp) {
         case EXP_IDENTIFIER:
             exp_identifer_destroy((Exp_identifier_t*)exp->exp);
             break;
+        case EXP_CALL:
+            exp_call_destroy((Exp_call_t*)exp->exp);
+            break;
         case EXP_PANIC_MODE: 
             free(exp->exp);
             break;
     }
     free(exp);
+}
+
+void exp_free(void* e) {
+    exp_destroy(e);
 }
 
 #pragma endregion Expressions
@@ -171,8 +194,18 @@ Stmt_declaration_t *stmt_declaration_init(char *identifier, Exp_t *exp) {
     return s;
 }
 
-Stmt_assignement_t *stmt_assignement_init(char *identifier, Exp_t *exp) {
+Stmt_assignment_t *stmt_assignment_init(char *identifier, Exp_t *exp) {
     return stmt_declaration_init(identifier, exp);
+}
+
+Stmt_function_t *stmt_function_init(char *identifier, List formals, Stmt_t *body) {
+    Stmt_function_t *s = mem_calloc(1, sizeof(Stmt_function_t));
+    char *ide = mem_calloc(1, strlen(identifier) * sizeof(char));
+    memcpy(ide, identifier, strlen(identifier) * sizeof(char));
+    s->identifier = ide;
+    s->formals = formals;
+    s->body = body;
+    return s;
 }
 
 void stmt_print_destroy(Stmt_print_t * stmt) {
@@ -209,8 +242,17 @@ void stmt_declaration_destroy(Stmt_declaration_t *stmt) {
     return;
 }
 
-void stmt_assignement_destroy(Stmt_assignement_t *stmt) {
+void stmt_assignment_destroy(Stmt_assignment_t *stmt) {
     stmt_declaration_destroy(stmt);
+    return;
+}
+
+void stmt_function_destroy(Stmt_function_t *stmt) {
+    list_free(stmt->formals, NULL);
+    if(stmt->body != NULL)
+        stmt_destroy(stmt->body);
+    free(stmt->identifier);
+    free(stmt);
     return;
 }
 
@@ -238,7 +280,11 @@ void stmt_destroy(Stmt_t *stmt) {
             stmt_declaration_destroy((Stmt_declaration_t*)stmt->stmt);
             break;
         case STMT_ASSIGNMENT:
-            stmt_assignement_destroy((Stmt_assignement_t*)stmt->stmt);
+            stmt_assignment_destroy((Stmt_assignment_t*)stmt->stmt);
+            break;
+        case STMT_FUN:
+            stmt_function_destroy((Stmt_function_t*)stmt->stmt);
+            break;
     }
 
     free(stmt);
