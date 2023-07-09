@@ -37,7 +37,7 @@ void scanner_init(Scanner * scanner, const char * file_name) {
 }
 
 void scanner_destroy(Scanner scanner) {
-    if(scanner.source != NULL) free(scanner.source);
+    mem_free(scanner.source);
     list_free(scanner.tokens, token_free);
     return;
 }
@@ -116,6 +116,9 @@ void scan_token(Scanner *scanner, char c) {
             break;
         case K_STAR:
             add_token(scanner, STAR, NULL);
+            break;
+        case K_MOD:
+            add_token(scanner, MOD, NULL);
             break;
         case K_PIPE:
             add_token(scanner, PIPE, NULL);

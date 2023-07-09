@@ -4,17 +4,28 @@
 #include <stdlib.h>
 #include <string.h>
 
-void list_add(List *list, void *data) {
-   List new = mem_calloc(1, sizeof(ListNode));
+void list_add(l_list_t *list, void *data) {
+   l_list_t new = mem_calloc(1, sizeof(l_node_t));
    new->data = data;
    new->next = *list;
    *list = new;
    return;
 }
 
-int list_len(List list) {
+void list_dl_add(dl_list_t *list, void *data) {
+    dl_list_t new = mem_calloc(1, sizeof(dl_node_t));
+    new->data = data;
+    new->next = *list;
+    new->prev = NULL;
+    if(*list)
+        (*list)->prev = new;
+    *list = new;
+    return;
+}
+
+int list_len(l_list_t list) {
     int len = 0;
-    List head = list;
+    l_list_t head = list;
     while(head != NULL){
         len++;
         head = head->next;
@@ -22,9 +33,19 @@ int list_len(List list) {
     return len;
 }
 
-List list_reverse(List l) {
-    List res = NULL;
-    List current = l;
+int list_dl_len(dl_list_t list) {
+    int len = 0;
+    dl_list_t head = list;
+    while(head) {
+        len++;
+        head = head->next;
+    }
+    return len;
+}
+
+l_list_t list_reverse(l_list_t l) {
+    l_list_t res = NULL;
+    l_list_t current = l;
     while(current) {
         list_add(&res, current->data);
         current = current->next;
@@ -32,10 +53,10 @@ List list_reverse(List l) {
     return res;
 }
 
-void list_reverse_in_place(List *l) {
-    List prev = NULL;
-    List current = *l;
-    List next;
+void list_reverse_in_place(l_list_t *l) {
+    l_list_t prev = NULL;
+    l_list_t current = *l;
+    l_list_t next;
     while (current != NULL)
     {
         next = current->next; 
@@ -47,10 +68,10 @@ void list_reverse_in_place(List *l) {
     return;
 }
 
-List list_dup(List l) {
-    List res = NULL;
+l_list_t list_dup(l_list_t l) {
+    l_list_t res = NULL;
     list_reverse_in_place(&l);
-    List current = l;
+    l_list_t current = l;
     while(current) {
         list_add(&res, current->data);
         current = current->next;
@@ -59,19 +80,36 @@ List list_dup(List l) {
     return res;
 }
 
-void list_free(List list, CallBackFree fn_free) {
+void list_free(l_list_t list, call_back_free_t fn_free) {
     if(list == NULL) return;
-    List head = list;
+    l_list_t head = list;
     while(head != NULL) {
         if(fn_free != NULL) {
             fn_free(head->data);
         }
         else {
-            free(head->data);
+            mem_free(head->data);
         }
-        List tmp = head;
+        l_list_t tmp = head;
         head = head->next;
-        free(tmp);
+        tmp->next = NULL;
+        mem_free(tmp);
     }
     return;
+}
+
+void list_dl_free(dl_list_t list, call_back_free_t fn_free) {
+    if(list == NULL) return;
+    dl_list_t head = list;
+    while(head) {
+        if(fn_free)
+            fn_free(head->data);
+        else
+            mem_free(head->data);
+        dl_list_t tmp = head;
+        head = head->next;
+        tmp->next = NULL;
+        tmp->prev = NULL;
+        mem_free(tmp);
+    }
 }

@@ -3,7 +3,17 @@
   "configurations": [
     {
       "type": "lldb",
-      "name": "lotus",
+      "name": "lotus Code",
+      "request": "launch",
+      "program": "${workspaceFolder}/lotus",
+      "cwd": "${workspaceFolder}",
+      "args": [
+          "${workspaceFolder}/test/arithmetic.lotus"
+      ]
+    },
+    {
+      "type": "cppdbg",
+      "name": "lotus Vim",
       "request": "launch",
       "program": "${workspaceFolder}/lotus",
       "cwd": "${workspaceFolder}",

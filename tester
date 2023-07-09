@@ -35,7 +35,7 @@ RunTestSuite() {
         echo -e "${DARKGREY}Expected Output:${NOCOLOR}"
         echo -e "$assertion"
     fi
-    #rm .output
+    rm .output
 }
 
 
@@ -45,5 +45,6 @@ echo -e "${MAGENTA}Running tests ${NOCOLOR}"
 
 RunTestSuite "'-15*2/5 == 15*2/5*(-1)' should evaluate to true" ./$executable "$(cat ./test/.arithmetic-output)" ./test/arithmetic.lotus
 RunTestSuite "'\"Hello\" != \"World\"' should evaluate to true" ./$executable "$(cat ./test/.string-output)" ./test/string.lotus
+RunTestSuite 'if("bar" == "foo") should evaluate the else branch' ./$executable "$(cat ./test/.conditional-output)" ./test/conditional.lotus
 
 exit 0

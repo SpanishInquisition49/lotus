@@ -5,6 +5,7 @@
 #include <string.h>
 #include <errno.h>
 #include <limits.h>
+#include "memory.h"
 
 char  *config_read(char* key) {
     char p[PATH_MAX];
@@ -30,8 +31,7 @@ char  *config_read(char* key) {
         break;
     }
 
-    if(line)
-        free(line);
+    mem_free(line);
     fclose(config_file);
     return value;
 }

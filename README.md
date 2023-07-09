@@ -24,7 +24,7 @@ make # Compile the project with the debug flag
 
 ### Testing
 ```bash
-make run_test # Run some test for the logic
+make check # Run some test for the logic
 make valgrind # Run valgrind
 ```
 
