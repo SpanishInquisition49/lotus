@@ -17,7 +17,7 @@
 typedef struct { 
     const char* filename;
     char* source;
-    List tokens;
+    l_list_t tokens;
     int line_number;
     int start;
     int current;

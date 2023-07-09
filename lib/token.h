@@ -76,14 +76,14 @@ void token_print(Token);
  * @brief Print the given token list
  * @param List: the token list to print
  */
-void tokens_print(List);
+void tokens_print(l_list_t);
 
 /**
  * @brief duplicate a given list of tokens inside another
  * @param List source: The list to duplicate
  * @param List *destination: The list* where to duplicate 
  */
-void tokens_dup(List, List*);
+void tokens_dup(l_list_t, l_list_t*);
 
 /**
  * @brief Get the token at the given position from the given list
@@ -91,7 +91,7 @@ void tokens_dup(List, List*);
  * @param int position: the position to retrieve
  * @return Token* a token pointer if position < list_len(tokens) or NULL
  */
-Token *tokens_get(List, int);
+Token *tokens_get(l_list_t, int);
 
 /**
  * @brief Clear all the allocated data for a token

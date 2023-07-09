@@ -37,7 +37,7 @@ void scanner_init(Scanner * scanner, const char * file_name) {
 }
 
 void scanner_destroy(Scanner scanner) {
-    if(scanner.source != NULL) free(scanner.source);
+    mem_free(scanner.source);
     list_free(scanner.tokens, token_free);
     return;
 }

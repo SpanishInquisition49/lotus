@@ -1,5 +1,6 @@
 #ifndef ERRORS_H
 #define ERRORS_H
+#include <stdarg.h>
 
 #define ANSI_COLOR_RED     "\x1b[31m"
 #define ANSI_COLOR_GREEN   "\x1b[32m"
@@ -11,6 +12,7 @@
 
 #define LOG_LEVELS 3
 
+
 enum LogLevel {
     INFO,
     WARNING,
@@ -18,6 +20,7 @@ enum LogLevel {
 };
 
 void Log(enum LogLevel, const char *restrict, ...);
+void Log_v(enum LogLevel, const char *restrict, va_list);
 
 void Log_set_level(enum LogLevel);
 

@@ -9,10 +9,10 @@ static char* pretty_type(TokenType);
 
 void token_free(void *token) {
     Token *t = (Token*)token;
-    if(t->lexeme && t->type != END)
-        free(t->lexeme);
-    free(t->literal);
-    free(token);
+    if(t->type != END)
+        mem_free(t->lexeme);
+    mem_free(t->literal);
+    mem_free(token);
     return;
 }
 
@@ -21,8 +21,8 @@ void token_print(Token tok) {
     return;
 }
 
-void tokens_print(List tokens) {
-    List current = list_reverse(tokens);
+void tokens_print(l_list_t tokens) {
+    l_list_t current = list_reverse(tokens);
     while(current) {
         token_print(*(Token*)current->data);
         current = current->next;
@@ -30,18 +30,18 @@ void tokens_print(List tokens) {
     return;
 }
 
-Token *tokens_get(List tokens, int index) {
+Token *tokens_get(l_list_t tokens, int index) {
     if(index >= list_len(tokens))
         return NULL;
-    List current = tokens;
+    l_list_t current = tokens;
     for(int i = 0; i< index; i++){
         current = current->next;
     }
     return current->data;
 }
 
-void tokens_dup(List source, List *dest) {
-    List head = source;
+void tokens_dup(l_list_t source, l_list_t *dest) {
+    l_list_t head = source;
     while(head) {
         Token *duped = mem_calloc(1, sizeof(Token));
         Token *tok = (Token*)head->data;

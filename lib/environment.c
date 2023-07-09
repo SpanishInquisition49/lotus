@@ -3,92 +3,110 @@
 #include <string.h>
 #include "environment.h"
 #include "errors.h"
+#include "list.h"
 #include "memory.h"
 
-static int env_len(Env*);
+static env_item_t* env_item_init(char*, void*);
+static void env_item_destroy(env_item_t*);
+static void env_item_free(void*);
 
 int env_len(Env *e) {
     int i = 0;
-    Env *current = e;
-    while(current->identifier != NULL) {
+    l_list_t current = e->env;
+    while(((env_item_t*)current->data)->identifier != NULL) {
         i++;
-        current = current->prev;
+        current = current->next;
     }
     return i;
 }
 
-void env_init(Env *e) {
-    e->prev = NULL;
-    e->identifier = NULL;
-    e->value = NULL;
+void env_init(Env* e) {
+    e->env = NULL;
+    e->size = 0;
+    return;
 }
 
-Env* env_bind(Env *e, char *identifier, void *value) {
-    Env *new = mem_calloc(1, sizeof(Env));
-    new->prev = e;
-    new->value = value;
-    new->identifier = strdup(identifier);
-    return new;
+void env_bind(Env *e, char *identifier, void *value) {
+    list_add(&e->env, env_item_init(identifier, value));
+    e->size++;
+    return;
 }
 
 void *env_get(Env *e, char *key) {
-    Env current = *e;
-    while(current.identifier != NULL) {
-        if(strcmp(current.identifier, key) == 0)
-            return current.value;
-        current = *current.prev;
+    l_list_t current = e->env;
+    while(((env_item_t*)current->data)->identifier != NULL) {
+        env_item_t *tmp = (env_item_t*)current->data;
+        if(strcmp(tmp->identifier, key) == 0)
+            return tmp->value;
+        current = current->next;
     }
     return NULL;
 }
 
 void *env_set(Env *e, char *key, void *new_val) {
-    Env *current = e;
-    while(current->identifier != NULL) {
-        if(strcmp(current->identifier, key) == 0) {
-            void *old_value = current->value;
-            current->value = new_val;
-            return old_value;
+    l_list_t current = e->env;
+    while(((env_item_t*)current->data)->identifier != NULL) {
+        if(strcmp(((env_item_t*)current->data)->identifier, key) == 0) {
+            void *old_v = ((env_item_t*)current->data)->value = new_val; 
+            return old_v;
         }
+        current = current->next;
     }
     return NULL;
 }
 
-Env* env_unbind(Env *e) {
-    if(e->identifier == NULL)
-        return e;
-    free(e->identifier);
-    free(e->value);
-    return e->prev;
-}
-
-void env_destroy(Env *e) {
-    Env *current = e;
-    while(current->identifier != NULL) {
-        Env *tmp = env_unbind(current);
-        free(current);
-        current = tmp;
-    }
+void env_unbind(Env *e) {
+    if(e->env->data == NULL)
+        return;
+    l_list_t new_head = e->env->next;
+    l_list_t tmp = e->env;
+    env_item_free(tmp->data);
+    e->env = new_head;
+    mem_free(tmp);
+    e->size--;
     return;
 }
 
-Env *env_restore(Env *current, Env *original) {
-    int n = env_len(current) - env_len(original);
-    for(int i=0; i<n; i++)
-        current = env_unbind(current);
-    return current;
+void env_destroy(Env *e) {
+    list_free(e->env, env_item_free);
+    return;
 }
 
-Env *env_bulk_bind(Env *env, List identifiers, List values) {
-    Env *current_env = env;
-    List current_ide = identifiers;
-    List current_val = values;
+void env_restore(Env *current, int old_size) {
+    int n = current->size - old_size;
+    for(int i=0; i<n; i++)
+        env_unbind(current);
+    return;
+}
+
+int env_bulk_bind(Env *env, l_list_t identifiers, l_list_t values) {
+    l_list_t current_ide = identifiers;
+    l_list_t current_val = values;
     while(current_ide != NULL && current_val != NULL) {
-        current_env = env_bind(current_env, current_ide->data, current_val->data);
+        env_bind(env, current_ide->data, current_val->data);
         current_val = current_val->next;
         current_ide = current_ide->next;
     }
 
     if(current_ide != NULL || current_val != NULL)
-        return NULL;
-    return current_env;
+        return 0;
+    return 1;
+}
+
+env_item_t *env_item_init(char *ide, void *value) {
+    env_item_t *new = mem_calloc(0, sizeof(env_item_t));
+    new->value = value;
+    new->identifier = strdup(ide);
+    return new;
+}
+
+void env_item_destroy(env_item_t *item) {
+    mem_free(item->identifier);
+    mem_free(item);
+    return;   
+}
+
+void env_item_free(void *item) {
+    env_item_destroy(item);
+    return;
 }

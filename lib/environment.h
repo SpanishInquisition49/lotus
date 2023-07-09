@@ -1,21 +1,24 @@
 #ifndef ENVIRONMENT_H
 #define ENVIRONMENT_H
 #include "list.h"
-
-typedef struct env_s{
+typedef struct {
     char *identifier;
     void *value;
-    struct env_s* prev;
+} env_item_t;
+
+typedef struct {
+    l_list_t env;
+    int size;
 } Env;
 
 void env_init(Env*);
-Env *env_bind(Env*, char*, void*);
+void env_bind(Env*, char*, void*);
 void *env_get(Env*, char*);
 void *env_set(Env*, char*, void*);
-Env *env_unbind(Env*);
+void env_unbind(Env*);
 void env_destroy(Env*);
-Env *env_restore(Env*, Env*);
-Env *env_bulk_bind(Env*, List, List);
+void env_restore(Env*, int);
+int env_bulk_bind(Env*, l_list_t, l_list_t);
 
 #endif // !ENVIRONMENT_H
 #define ENVIRONMENT_H

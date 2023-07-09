@@ -7,7 +7,6 @@
 #include <stdarg.h>
 #include <stdio.h>
 #include <string.h>
-#include <wchar.h>
 
 static Exp_t *expression(Parser*);
 static Exp_t *equality(Parser*);
@@ -38,7 +37,7 @@ static Stmt_t *stmt_declaration(Parser*);
 static Stmt_t *stmt_assignment(Parser*);
 static Stmt_t *stmt_function_declaration(Parser*);
 
-void parser_init(Parser *parser, List tokens) {
+void parser_init(Parser *parser, l_list_t tokens) {
     parser->current = 0;
     parser->tokens = tokens;
     for(int i=0; i<LOG_LEVELS; i++)
@@ -46,8 +45,8 @@ void parser_init(Parser *parser, List tokens) {
     return;
 }
 
-List parser_parse(Parser* parser) {
-    List statements = NULL;
+l_list_t parser_parse(Parser* parser) {
+    l_list_t statements = NULL;
     while(!is_at_end(parser)) {
         list_add(&statements, statement(parser));
     }
@@ -164,7 +163,7 @@ Exp_t *call(Parser *p) {
         return primary(p);
     char *ide = previous(p)->literal;
     if(match(p, 1, LEFT_PAREN)) {
-        List actuals = NULL;
+        l_list_t actuals = NULL;
         while(!check(p, RIGHT_PAREN) && !is_at_end(p)) {
             Exp_t *actual = expression(p);
             list_add(&actuals, actual);
@@ -336,7 +335,7 @@ Stmt_t *stmt_condition(Parser *p) {
 }
 
 Stmt_t *stmt_block(Parser *p) { 
-    List statements = NULL;
+    l_list_t statements = NULL;
     while(!check(p, RIGHT_BRACE) && !is_at_end(p)) {
         list_add(&statements, statement(p));
     }
@@ -366,7 +365,7 @@ Stmt_t *stmt_assignment(Parser *p) {
 
 Stmt_t *stmt_function_declaration(Parser *p) {
     Token *t = consume(p, IDENTIFIER, "Functions must have a name\n");
-    List formals = NULL;
+    l_list_t formals = NULL;
     consume(p, LEFT_PAREN, "Missing '(' after function name\n");
     while(!check(p, RIGHT_PAREN) && !is_at_end(p)) {
         if(match(p, 1, IDENTIFIER)) {

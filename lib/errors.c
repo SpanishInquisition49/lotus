@@ -23,6 +23,20 @@ void Log(enum LogLevel level, const char *restrict fmt, ...) {
     va_end(args);
 }
 
+void Log_v(enum LogLevel level, const char *restrict fmt, va_list args) {
+    if(level > LOG_LEVELS || level < internal_log_level) return;
+    if(level == INFO) {
+        dprintf(2,"%s[%s] " ANSI_COLOR_RESET, get_ansi_color(level), pretty_log_level(level));
+        vdprintf(2, fmt, args);
+    }
+    else {
+        dprintf(2,"%s[%s] ", get_ansi_color(level), pretty_log_level(level));
+        vdprintf(2, fmt, args);
+        dprintf(2, ANSI_COLOR_RESET);
+    
+    }
+}
+
 void Log_set_level(enum LogLevel level) {
     if(level > LOG_LEVELS) return;
     internal_log_level = level;
