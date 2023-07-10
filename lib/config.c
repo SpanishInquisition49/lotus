@@ -14,7 +14,7 @@ char  *config_read(char* key) {
     strcat(p, "/.config/lotus/lotus.conf\0");
     FILE *config_file = fopen(p, "r");
     if(config_file == NULL) {
-        dprintf(2, "config file not found\n");
+        //dprintf(2, "config file not found\n");
         return NULL;
     }
     char *value = NULL;
