@@ -10,6 +10,7 @@
 
 static Exp_t *expression(Parser*);
 static Exp_t *equality(Parser*);
+static Exp_t *boolean_algebra(Parser*);
 static Exp_t *comparison(Parser*);
 static Exp_t *term(Parser*);
 static Exp_t *factor(Parser*);
@@ -82,10 +83,10 @@ Exp_t *expression(Parser *p) {
 
 Exp_t *equality(Parser *p) {
     Exp_t *expr = NULL;
-    expr = comparison(p);
+    expr = boolean_algebra(p);
     while(match(p, 2, BANG_EQUAL, EQUAL_EQUAL)) {
         Token *prev = peek_previous(p);
-        Exp_t *right = comparison(p);
+        Exp_t *right = boolean_algebra(p);
         Operator op = OP_ERROR;
         if(prev)
             op = token_to_operator(*prev);
@@ -95,6 +96,20 @@ Exp_t *equality(Parser *p) {
 
     }
     return expr;
+}
+
+Exp_t *boolean_algebra(Parser *p) {
+    Exp_t *expr = comparison(p);
+    while(match(p, 2, AND, OR)) {
+        Token *prev = peek_previous(p);
+        Exp_t *right = comparison(p);
+        Operator op = OP_ERROR;
+        if(prev)
+            op = token_to_operator(*prev);
+        Exp_binary_t *e = exp_binary_init(expr, op, right);
+        expr = exp_init(EXP_BINARY, e);
+    }
+    return expr;  
 }
 
 Exp_t *comparison(Parser *p) {

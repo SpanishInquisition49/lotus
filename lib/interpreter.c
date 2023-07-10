@@ -221,6 +221,16 @@ value_t *eval_binary(Interpreter *i, Exp_t *exp) {
         case OP_NOT_EQUAL:
             result = gc_init_boolean(i->garbage_collector, !is_equal(i, left, right));
             break;
+        case OP_AND:
+            if(left->type != right ->type || left->type != T_BOOLEAN)
+                raise_runtime_error(i, "Type Error:\t Operands must be booleans\n");
+            result = gc_init_boolean(i->garbage_collector, *((int*)left->value) && *((int*)right->value));
+            break;
+        case OP_OR:
+            if(left->type != right->type || left->type != T_BOOLEAN)
+                raise_runtime_error(i, "Type Error:\t Operands must be booleans\n");
+            result = gc_init_boolean(i->garbage_collector, *((int*)left->value) || *((int*)right->value));
+            break; 
         default: // Theoretically unreachable
             raise_runtime_error(i, "Unkown Operation\n");
     }
@@ -306,7 +316,7 @@ value_t *eval_stmt_declaration(Interpreter *i, Stmt_t *s) {
     Stmt_declaration_t *unwrapped_stmt = stmt_unwrap(s);
     value_t *v = eval(i, unwrapped_stmt->exp);
     env_bind(i->environment, unwrapped_stmt->identifier, v);
-    return return_null(i);
+    return v;
 }
 
 value_t *eval_stmt_assignment(Interpreter *i, Stmt_t *s) {
