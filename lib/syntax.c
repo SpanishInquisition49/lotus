@@ -318,7 +318,10 @@ Stmt_conditional_t *stmt_conditional_dup(Stmt_conditional_t *s) {
     Stmt_conditional_t *duped = mem_calloc(1, sizeof(Stmt_conditional_t));
     duped->condition = exp_dup(s->condition);
     duped->then_brench = stmt_dup(s->then_brench);
-    duped->else_brench = stmt_dup(s->else_brench);
+    if(s->else_brench)
+        duped->else_brench = stmt_dup(s->else_brench);
+    else
+        duped->else_brench = NULL;
     return duped;
 }
 

@@ -22,8 +22,9 @@ static void parser_log(Parser*);
 static int match(Parser*, int, ...);
 static int check(Parser*, TokenType);
 static int is_at_end(Parser*);
-static Token *previous(Parser*);
+static Token *peek_previous(Parser*);
 static Token *peek(Parser*);
+static Token *peek_next(Parser*);
 static Token *advance(Parser*);
 static Token *back(Parser*);
 static Token *consume(Parser*, TokenType, char *);
@@ -83,7 +84,7 @@ Exp_t *equality(Parser *p) {
     Exp_t *expr = NULL;
     expr = comparison(p);
     while(match(p, 2, BANG_EQUAL, EQUAL_EQUAL)) {
-        Token *prev = previous(p);
+        Token *prev = peek_previous(p);
         Exp_t *right = comparison(p);
         Operator op = OP_ERROR;
         if(prev)
@@ -100,7 +101,7 @@ Exp_t *comparison(Parser *p) {
     Exp_t *expr = NULL; 
     expr = term(p);
     while(match(p, 4, GREATER, GREATER_EQUAL, LESS, LESS_EQUAL)) {
-        Token *prev = previous(p);
+        Token *prev = peek_previous(p);
         Exp_t *right = term(p);
         Operator op = OP_ERROR;
         if(prev)
@@ -116,7 +117,7 @@ Exp_t *term(Parser *p) {
     Exp_t *expr = NULL;
     expr = factor(p);
     while(match(p, 2, MINUS, PLUS)) {
-        Token *prev = previous(p);
+        Token *prev = peek_previous(p);
         Exp_t *right = factor(p);
         Operator op = OP_ERROR;
         if(prev)
@@ -132,7 +133,7 @@ Exp_t *factor(Parser *p) {
    Exp_t *expr = NULL;
    expr = unary(p);
    while(match(p, 3, SLASH, STAR, MOD)) {
-        Token *prev = previous(p);
+        Token *prev = peek_previous(p);
         Exp_t *right = unary(p);
         Operator op = OP_ERROR;
         if(prev)
@@ -146,7 +147,7 @@ Exp_t *factor(Parser *p) {
 
 Exp_t *unary(Parser* p) {
     if(match(p, 2, BANG, MINUS)) {
-        Token *prev = previous(p);
+        Token *prev = peek_previous(p);
         Exp_t *right = unary(p);
         Operator op = OP_ERROR;
         if(prev)
@@ -161,7 +162,7 @@ Exp_t *unary(Parser* p) {
 Exp_t *call(Parser *p) {
     if(!match(p, 1, IDENTIFIER))
         return primary(p);
-    char *ide = previous(p)->literal;
+    char *ide = peek_previous(p)->literal;
     if(match(p, 1, LEFT_PAREN)) {
         l_list_t actuals = NULL;
         while(!check(p, RIGHT_PAREN) && !is_at_end(p)) {
@@ -195,11 +196,11 @@ Exp_t *primary(Parser *p) {
     if(match(p, 1, NIL)) 
         return exp_init(EXP_LITERAL, exp_literal_init(T_NIL, NULL));
     if(match(p, 1, NUMBER))
-        return exp_init(EXP_LITERAL, exp_literal_init(T_NUMBER, previous(p)->literal));
+        return exp_init(EXP_LITERAL, exp_literal_init(T_NUMBER, peek_previous(p)->literal));
     if(match(p, 1, STRING))
-        return exp_init(EXP_LITERAL, exp_literal_init(T_STRING, previous(p)->literal));
+        return exp_init(EXP_LITERAL, exp_literal_init(T_STRING, peek_previous(p)->literal));
     if(match(p, 1, IDENTIFIER))
-        return exp_init(EXP_IDENTIFIER, exp_identifier_init((char*)previous(p)->literal));
+        return exp_init(EXP_IDENTIFIER, exp_identifier_init((char*)peek_previous(p)->literal));
     if(match(p, 1, LEFT_PAREN)) {
         Exp_t *expr = expression(p);
         if(consume(p, RIGHT_PAREN, "Expected ')' after expression.\n") == NULL)
@@ -215,7 +216,7 @@ Exp_t *primary(Parser *p) {
 void synchronize(Parser *p) {
     advance(p);
     while(!is_at_end(p)) {
-        if(previous(p)->type == SEMICOLON) return;
+        if(peek_previous(p)->type == SEMICOLON) return;
         switch (peek(p)->type) {
             case FUN:
             case VAR:
@@ -254,7 +255,7 @@ int check(Parser *p, TokenType token) {
 
 Token *advance(Parser *p) {
     if(!is_at_end(p)) p->current++;
-    return previous(p);
+    return peek_previous(p);
 }
 
 Token *back(Parser *p) {
@@ -268,8 +269,12 @@ Token *peek(Parser *p) {
     return tokens_get(p->tokens, p->current);
 }
 
-Token *previous(Parser *p) {
+Token *peek_previous(Parser *p) {
     return tokens_get(p->tokens, (p->current)-1);
+}
+
+Token *peek_next(Parser *p) {
+    return tokens_get(p->tokens, p->current+1);
 }
 
 Token *consume(Parser* p, TokenType type, char *msg) {
@@ -301,7 +306,7 @@ int is_at_end(Parser* p) {
 Stmt_t *statement(Parser *p) {
     if(match(p, 1, VAR)) return stmt_declaration(p);
     if(match(p, 1, FUN)) return stmt_function_declaration(p);
-    if(check(p, IDENTIFIER)) return peek(p)->type == EQUAL ? stmt_assignment(p) : stmt_expr(p);
+    if(check(p, IDENTIFIER)) return peek_next(p)->type == EQUAL ? stmt_assignment(p) : stmt_expr(p);
     if(match(p, 1, LEFT_BRACE)) return stmt_block(p);
     if(match(p, 1, IF)) return stmt_condition(p);
     if(match(p, 1, PRINT)) return stmt_print(p);
@@ -369,7 +374,7 @@ Stmt_t *stmt_function_declaration(Parser *p) {
     consume(p, LEFT_PAREN, "Missing '(' after function name\n");
     while(!check(p, RIGHT_PAREN) && !is_at_end(p)) {
         if(match(p, 1, IDENTIFIER)) {
-            list_add(&formals, strdup(previous(p)->literal));
+            list_add(&formals, strdup(peek_previous(p)->literal));
         }
         if(check(p, RIGHT_PAREN))
             break;
