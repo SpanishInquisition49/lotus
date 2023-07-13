@@ -34,7 +34,7 @@ void env_bind(Env *e, char *identifier, void *value) {
 
 void *env_get(Env *e, char *key) {
     l_list_t current = e->env;
-    while(((env_item_t*)current->data)->identifier != NULL) {
+    while(current != NULL) { 
         env_item_t *tmp = (env_item_t*)current->data;
         if(strcmp(tmp->identifier, key) == 0)
             return tmp->value;
@@ -45,7 +45,7 @@ void *env_get(Env *e, char *key) {
 
 void *env_set(Env *e, char *key, void *new_val) {
     l_list_t current = e->env;
-    while(((env_item_t*)current->data)->identifier != NULL) {
+    while(current != NULL) {
         if(strcmp(((env_item_t*)current->data)->identifier, key) == 0) {
             void *old_v = ((env_item_t*)current->data)->value = new_val; 
             return old_v;
