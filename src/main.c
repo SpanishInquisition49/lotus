@@ -30,10 +30,10 @@ static int parser_alive = 0;
 static int interpreter_alive = 0;
 static int sig_handler_alive = 1;
 
-static Scanner scanner;
-static Parser parser;
-static Interpreter interpreter;
-static Env environment;
+static scanner_t scanner;
+static parser_t parser;
+static interpreter_t interpreter;
+static env_t environment;
 static garbage_collector_t garbage_collector;
 
 int main(int argc, char *argv[]) {
@@ -121,7 +121,7 @@ void set_config(void) {
     log_level = WARNING;
    if(v)
     free(v);
-   Log_set_level(log_level);
+   err_log_set_level(log_level);
    v = config_read("PRINT_REPORT");
    if(v == NULL)
     show_reports = 0;

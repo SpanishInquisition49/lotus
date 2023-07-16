@@ -1,4 +1,7 @@
 *.o
+*.gcda
+*.gcno
+*.gcov
 *.log
 lotus
 *.core*

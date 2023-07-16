@@ -6,19 +6,19 @@
 
 #pragma region Expressions
 
-void *exp_unwrap(Exp_t *exp) {
+void *exp_unwrap(exp_t *exp) {
     return exp->exp;
 }
 
-Exp_t *exp_init(ExpType t, void *exp) {
-    Exp_t *e = mem_calloc(1, sizeof(Exp_t));
+exp_t *exp_init(exp_type_t t, void *exp) {
+    exp_t *e = mem_calloc(1, sizeof(exp_t));
     e->type = t;
     e->exp = exp;
     return e;
 }
 
-Exp_t *exp_dup(Exp_t *exp) {
-    Exp_t *duped = mem_calloc(1, sizeof(Exp_t));
+exp_t *exp_dup(exp_t *exp) {
+    exp_t *duped = mem_calloc(1, sizeof(exp_t));
     duped->type = exp->type;
     switch(exp->type) {
         case EXP_UNARY:
@@ -44,38 +44,38 @@ Exp_t *exp_dup(Exp_t *exp) {
     return duped;
 }
 
-Exp_binary_t *exp_binary_init(Exp_t* left, Operator op, Exp_t * right) {
-    Exp_binary_t *e = mem_calloc(1, sizeof(Exp_binary_t));
+exp_binary_t *exp_binary_init(exp_t* left, operator_t op, exp_t * right) {
+    exp_binary_t *e = mem_calloc(1, sizeof(exp_binary_t));
     e->op = op;
     e->right = right;
     e->left = left;
     return e;
 }
 
-Exp_binary_t *exp_binary_dup(Exp_binary_t *exp) {
-    Exp_binary_t *duped = mem_calloc(1, sizeof(Exp_binary_t));
+exp_binary_t *exp_binary_dup(exp_binary_t *exp) {
+    exp_binary_t *duped = mem_calloc(1, sizeof(exp_binary_t));
     duped->op = exp->op;
     duped->left = exp_dup(exp->left);
     duped->right = exp_dup(exp->right);
     return duped;
 }
 
-Exp_unary_t *exp_unary_init(Operator op, Exp_t *rigth) {
-    Exp_unary_t *e = mem_calloc(1, sizeof(Exp_unary_t));
+exp_unary_t *exp_unary_init(operator_t op, exp_t *right) {
+    exp_unary_t *e = mem_calloc(1, sizeof(exp_unary_t));
     e->op = op;
-    e->right = rigth;
+    e->right = right;
     return e;
 }
 
-Exp_unary_t *exp_unary_dup(Exp_unary_t* exp) {
-    Exp_unary_t *duped = mem_calloc(1, sizeof(Exp_unary_t));
+exp_unary_t *exp_unary_dup(exp_unary_t* exp) {
+    exp_unary_t *duped = mem_calloc(1, sizeof(exp_unary_t));
     duped->op = exp->op;
     duped->right = exp_dup(exp->right);
     return duped;
 }
 
-Exp_literal_t *exp_literal_init(LiteralType type, void* value) {
-    Exp_literal_t *e = mem_calloc(1, sizeof(Exp_literal_t));
+exp_literal_t *exp_literal_init(literal_type_t type, void* value) {
+    exp_literal_t *e = mem_calloc(1, sizeof(exp_literal_t));
     e->type = type;
     switch(type) {
         case T_STRING: {
@@ -97,8 +97,8 @@ Exp_literal_t *exp_literal_init(LiteralType type, void* value) {
     return e;
 }
 
-Exp_literal_t *exp_literal_dup(Exp_literal_t *exp) {
-    Exp_literal_t *duped = mem_calloc(1, sizeof(Exp_literal_t));
+exp_literal_t *exp_literal_dup(exp_literal_t *exp) {
+    exp_literal_t *duped = mem_calloc(1, sizeof(exp_literal_t));
     duped->type = exp->type;
     switch(exp->type) {
         case T_STRING:
@@ -123,34 +123,34 @@ Exp_literal_t *exp_literal_dup(Exp_literal_t *exp) {
     return duped;
 }
 
-Exp_grouping_t *exp_grouping_init(Exp_t* exp) {
-    Exp_grouping_t *e = mem_calloc(1, sizeof(Exp_grouping_t));
+exp_grouping_t *exp_grouping_init(exp_t* exp) {
+    exp_grouping_t *e = mem_calloc(1, sizeof(exp_grouping_t));
     e->exp = exp;
     return e;
 }
 
-Exp_grouping_t *exp_grouping_dup(Exp_grouping_t *exp) {
-    Exp_grouping_t *duped = mem_calloc(1, sizeof(Exp_grouping_t));
+exp_grouping_t *exp_grouping_dup(exp_grouping_t *exp) {
+    exp_grouping_t *duped = mem_calloc(1, sizeof(exp_grouping_t));
     duped->exp = exp_dup(exp->exp);
     return duped;
 }
 
-Exp_identifier_t *exp_identifier_init(char *identifier) {
-    Exp_identifier_t *e = mem_calloc(1, sizeof(Exp_identifier_t));
+exp_identifier_t *exp_identifier_init(char *identifier) {
+    exp_identifier_t *e = mem_calloc(1, sizeof(exp_identifier_t));
     char *ide = mem_calloc(1, strlen(identifier) * sizeof(char));
     memcpy(ide, identifier, strlen(identifier) * sizeof(char));
     e->identifier = ide;
     return e;
 }
 
-Exp_identifier_t *exp_identifier_dup(Exp_identifier_t *exp) {
-    Exp_identifier_t *duped = mem_calloc(1, sizeof(Exp_identifier_t));
+exp_identifier_t *exp_identifier_dup(exp_identifier_t *exp) {
+    exp_identifier_t *duped = mem_calloc(1, sizeof(exp_identifier_t));
     duped->identifier = strdup(exp->identifier);
     return duped;
 }
 
-Exp_call_t *exp_call_init(char *identifier, l_list_t actuals) {
-    Exp_call_t *e = mem_calloc(1, sizeof(Exp_call_t));
+exp_call_t *exp_call_init(char *identifier, l_list_t actuals) {
+    exp_call_t *e = mem_calloc(1, sizeof(exp_call_t));
     char *ide = mem_calloc(1, strlen(identifier) * sizeof(char));
     memcpy(ide, identifier, strlen(identifier) * sizeof(char));
     e->identifier = ide;
@@ -158,8 +158,8 @@ Exp_call_t *exp_call_init(char *identifier, l_list_t actuals) {
     return e;
 }
 
-Exp_call_t *exp_call_dup(Exp_call_t *exp) {
-    Exp_call_t *duped = mem_calloc(1, sizeof(Exp_call_t));
+exp_call_t *exp_call_dup(exp_call_t *exp) {
+    exp_call_t *duped = mem_calloc(1, sizeof(exp_call_t));
     duped->identifier = strdup(exp->identifier);
     l_list_t act = NULL;
     l_list_t current = exp->actuals;
@@ -172,62 +172,62 @@ Exp_call_t *exp_call_dup(Exp_call_t *exp) {
     return duped;
 }
 
-void exp_binary_destroy(Exp_binary_t *exp) {
+void exp_binary_destroy(exp_binary_t *exp) {
     exp_destroy(exp->left);
     exp_destroy(exp->right);
     mem_free(exp);
     return; 
 }
 
-void exp_unary_destroy(Exp_unary_t *exp) {
+void exp_unary_destroy(exp_unary_t *exp) {
     exp_destroy(exp->right);
     mem_free(exp);
     return;
 }
 
-void exp_literal_destroy(Exp_literal_t *exp) {
+void exp_literal_destroy(exp_literal_t *exp) {
     mem_free(exp->value);
     mem_free(exp);
     return;
 }
 
-void exp_groping_destroy(Exp_grouping_t * exp) {
+void exp_groping_destroy(exp_grouping_t * exp) {
     exp_destroy(exp->exp);
     mem_free(exp);
     return;
 }
 
-void exp_identifier_destroy(Exp_identifier_t *exp) {
+void exp_identifier_destroy(exp_identifier_t *exp) {
     mem_free(exp->identifier);
     mem_free(exp);
     return;
 }
 
-void exp_call_destroy(Exp_call_t *exp) {
+void exp_call_destroy(exp_call_t *exp) {
     mem_free(exp->identifier);
     list_free(exp->actuals, exp_free);
     mem_free(exp);
 }
 
-void exp_destroy(Exp_t *exp) {
+void exp_destroy(exp_t *exp) {
     switch(exp->type) {
         case EXP_BINARY:
-            exp_binary_destroy((Exp_binary_t*)exp->exp);
+            exp_binary_destroy((exp_binary_t*)exp->exp);
             break;
         case EXP_UNARY:
-            exp_unary_destroy((Exp_unary_t*)exp->exp);
+            exp_unary_destroy((exp_unary_t*)exp->exp);
             break;
         case EXP_LITERAL:
-            exp_literal_destroy((Exp_literal_t *)exp->exp);
+            exp_literal_destroy((exp_literal_t *)exp->exp);
             break;
         case EXP_GROUPING:
-            exp_groping_destroy((Exp_grouping_t*)exp->exp);
+            exp_groping_destroy((exp_grouping_t*)exp->exp);
             break;
         case EXP_IDENTIFIER:
-            exp_identifier_destroy((Exp_identifier_t*)exp->exp);
+            exp_identifier_destroy((exp_identifier_t*)exp->exp);
             break;
         case EXP_CALL:
-            exp_call_destroy((Exp_call_t*)exp->exp);
+            exp_call_destroy((exp_call_t*)exp->exp);
             break;
         case EXP_PANIC_MODE: 
             mem_free(exp->exp);
@@ -244,16 +244,16 @@ void exp_free(void* e) {
 
 #pragma region Statements
 
-Stmt_t *stmt_init(StmtType type, void *stmt, int line) {
-    Stmt_t *s = mem_calloc(1, sizeof(Stmt_t));
+stmt_t *stmt_init(stmt_type_t type, void *stmt, int line) {
+    stmt_t *s = mem_calloc(1, sizeof(stmt_t));
     s->type = type;
     s->stmt = stmt;
     s->line = line;
     return s;
 }
 
-Stmt_t *stmt_dup(Stmt_t *stmt) {
-    Stmt_t *duped = mem_calloc(1, sizeof(Stmt_t));
+stmt_t *stmt_dup(stmt_t *stmt) {
+    stmt_t *duped = mem_calloc(1, sizeof(stmt_t));
     duped->type = stmt->type;
     duped->line = stmt->line;
     switch(stmt->type) {
@@ -282,57 +282,57 @@ Stmt_t *stmt_dup(Stmt_t *stmt) {
     return duped;
 }
 
-Stmt_print_t *stmt_print_init(Exp_t *exp) {
-    Stmt_print_t *s = mem_calloc(1, sizeof(Stmt_print_t));
+stmt_print_t *stmt_print_init(exp_t *exp) {
+    stmt_print_t *s = mem_calloc(1, sizeof(stmt_print_t));
     s->exp = exp;
     return s;
 }
 
-Stmt_print_t *stmt_print_dup(Stmt_print_t *s) {
-    Stmt_print_t *duped = mem_calloc(1, sizeof(Stmt_print_t));
+stmt_print_t *stmt_print_dup(stmt_print_t *s) {
+    stmt_print_t *duped = mem_calloc(1, sizeof(stmt_print_t));
     duped->exp = exp_dup(s->exp);
     return duped;
 }
 
-Stmt_expr_t *stmt_expr_init(Exp_t *exp) {
-    Stmt_expr_t *s = mem_calloc(1, sizeof(Stmt_expr_t));
+stmt_expr_t *stmt_expr_init(exp_t *exp) {
+    stmt_expr_t *s = mem_calloc(1, sizeof(stmt_expr_t));
     s->exp = exp;
     return s;
 }
 
-Stmt_expr_t *stmt_expr_dup(Stmt_expr_t *s) {
-    Stmt_expr_t *duped = mem_calloc(1, sizeof(Stmt_expr_t));
+stmt_expr_t *stmt_expr_dup(stmt_expr_t *s) {
+    stmt_expr_t *duped = mem_calloc(1, sizeof(stmt_expr_t));
     duped->exp = exp_dup(s->exp);
     return duped;
 }
 
-Stmt_conditional_t *stmt_conditional_init(Exp_t *exp_cond, Stmt_t *stmt_then, Stmt_t *stmt_else) {
-    Stmt_conditional_t *s = mem_calloc(1, sizeof(Stmt_conditional_t));
+stmt_conditional_t *stmt_conditional_init(exp_t *exp_cond, stmt_t *stmt_then, stmt_t *stmt_else) {
+    stmt_conditional_t *s = mem_calloc(1, sizeof(stmt_conditional_t));
     s->condition = exp_cond;
-    s->then_brench = stmt_then;
-    s->else_brench = stmt_else;
+    s->then_branch = stmt_then;
+    s->else_branch = stmt_else;
     return s;
 }
 
-Stmt_conditional_t *stmt_conditional_dup(Stmt_conditional_t *s) {
-    Stmt_conditional_t *duped = mem_calloc(1, sizeof(Stmt_conditional_t));
+stmt_conditional_t *stmt_conditional_dup(stmt_conditional_t *s) {
+    stmt_conditional_t *duped = mem_calloc(1, sizeof(stmt_conditional_t));
     duped->condition = exp_dup(s->condition);
-    duped->then_brench = stmt_dup(s->then_brench);
-    if(s->else_brench)
-        duped->else_brench = stmt_dup(s->else_brench);
+    duped->then_branch = stmt_dup(s->then_branch);
+    if(s->else_branch)
+        duped->else_branch = stmt_dup(s->else_branch);
     else
-        duped->else_brench = NULL;
+        duped->else_branch = NULL;
     return duped;
 }
 
-Stmt_block_t *stmt_block_init(l_list_t stmts) {
-    Stmt_block_t *s = mem_calloc(1, sizeof(Stmt_block_t));
+stmt_block_t *stmt_block_init(l_list_t stmts) {
+    stmt_block_t *s = mem_calloc(1, sizeof(stmt_block_t));
     s->statements = stmts;
     return s;
 }
 
-Stmt_block_t *stmt_block_dup(Stmt_block_t *s) {
-    Stmt_block_t *duped = mem_calloc(1, sizeof(Stmt_block_t));
+stmt_block_t *stmt_block_dup(stmt_block_t *s) {
+    stmt_block_t *duped = mem_calloc(1, sizeof(stmt_block_t));
     l_list_t stmts = NULL;
     l_list_t current = s->statements;
     while(current) {
@@ -344,8 +344,8 @@ Stmt_block_t *stmt_block_dup(Stmt_block_t *s) {
     return duped;
 }
 
-Stmt_declaration_t *stmt_declaration_init(char *identifier, Exp_t *exp) {
-    Stmt_declaration_t *s = mem_calloc(1, sizeof(Stmt_declaration_t));
+stmt_declaration_t *stmt_declaration_init(char *identifier, exp_t *exp) {
+    stmt_declaration_t *s = mem_calloc(1, sizeof(stmt_declaration_t));
     char *ide = mem_calloc(1, strlen(identifier)*sizeof(char));
     memcpy(ide, identifier, strlen(identifier)*sizeof(char));
     s->identifier = ide;
@@ -353,23 +353,23 @@ Stmt_declaration_t *stmt_declaration_init(char *identifier, Exp_t *exp) {
     return s;
 }
 
-Stmt_declaration_t *stmt_declaration_dup(Stmt_declaration_t *s) {
-    Stmt_declaration_t *duped = mem_calloc(1, sizeof(Stmt_declaration_t));
+stmt_declaration_t *stmt_declaration_dup(stmt_declaration_t *s) {
+    stmt_declaration_t *duped = mem_calloc(1, sizeof(stmt_declaration_t));
     duped->identifier = strdup(s->identifier);
     duped->exp = exp_dup(s->exp);
     return duped;
 }
 
-Stmt_assignment_t *stmt_assignment_init(char *identifier, Exp_t *exp) {
+stmt_assignment_t *stmt_assignment_init(char *identifier, exp_t *exp) {
     return stmt_declaration_init(identifier, exp);
 }
 
-Stmt_assignment_t *stmt_assignment_dup(Stmt_assignment_t *s) {
+stmt_assignment_t *stmt_assignment_dup(stmt_assignment_t *s) {
     return stmt_declaration_dup(s);
 }
 
-Stmt_function_t *stmt_function_init(char *identifier, l_list_t formals, Stmt_t *body) {
-    Stmt_function_t *s = mem_calloc(1, sizeof(Stmt_function_t));
+stmt_function_t *stmt_function_init(char *identifier, l_list_t formals, stmt_t *body) {
+    stmt_function_t *s = mem_calloc(1, sizeof(stmt_function_t));
     char *ide = mem_calloc(1, strlen(identifier) * sizeof(char));
     memcpy(ide, identifier, strlen(identifier) * sizeof(char));
     s->identifier = ide;
@@ -378,8 +378,8 @@ Stmt_function_t *stmt_function_init(char *identifier, l_list_t formals, Stmt_t *
     return s;
 }
 
-Stmt_function_t *stmt_function_dup(Stmt_function_t *s) {
-    Stmt_function_t *duped = mem_calloc(1, sizeof(Stmt_function_t));
+stmt_function_t *stmt_function_dup(stmt_function_t *s) {
+    stmt_function_t *duped = mem_calloc(1, sizeof(stmt_function_t));
     duped->identifier = strdup(s->identifier);
     duped->body = stmt_dup(s->body);
     l_list_t f = NULL;
@@ -393,46 +393,46 @@ Stmt_function_t *stmt_function_dup(Stmt_function_t *s) {
     return duped;
 }
 
-void stmt_print_destroy(Stmt_print_t * stmt) {
+void stmt_print_destroy(stmt_print_t * stmt) {
     exp_destroy(stmt->exp);
     mem_free(stmt);
     return;
 }
 
-void stmt_expr_destroy(Stmt_expr_t * stmt) {
+void stmt_expr_destroy(stmt_expr_t * stmt) {
     exp_destroy(stmt->exp);
     mem_free(stmt);
     return;
 }
 
-void stmt_conditional_destroy(Stmt_conditional_t *stmt) {
+void stmt_conditional_destroy(stmt_conditional_t *stmt) {
     exp_destroy(stmt->condition);
-    stmt_destroy(stmt->then_brench);
-    if(stmt->else_brench != NULL)
-        stmt_destroy(stmt->else_brench);
+    stmt_destroy(stmt->then_branch);
+    if(stmt->else_branch != NULL)
+        stmt_destroy(stmt->else_branch);
     mem_free(stmt);
     return;
 }
 
-void stmt_block_destroy(Stmt_block_t *stmt) {
+void stmt_block_destroy(stmt_block_t *stmt) {
     list_free(stmt->statements, stmt_free);
     mem_free(stmt);
     return;
 }
 
-void stmt_declaration_destroy(Stmt_declaration_t *stmt) {
+void stmt_declaration_destroy(stmt_declaration_t *stmt) {
     exp_destroy(stmt->exp);
     mem_free(stmt->identifier);
     mem_free(stmt);
     return;
 }
 
-void stmt_assignment_destroy(Stmt_assignment_t *stmt) {
+void stmt_assignment_destroy(stmt_assignment_t *stmt) {
     stmt_declaration_destroy(stmt);
     return;
 }
 
-void stmt_function_destroy(Stmt_function_t *stmt) {
+void stmt_function_destroy(stmt_function_t *stmt) {
     list_free(stmt->formals, NULL);
     if(stmt->body != NULL)
         stmt_destroy(stmt->body);
@@ -446,32 +446,32 @@ void stmt_free(void* s) {
 }
 
 
-void *stmt_unwrap(Stmt_t *s) {
+void *stmt_unwrap(stmt_t *s) {
     return s->stmt;
 }
 
-void stmt_destroy(Stmt_t *stmt) {
+void stmt_destroy(stmt_t *stmt) {
     switch(stmt->type) {
         case STMT_PRINT:
-            stmt_print_destroy((Stmt_print_t*)stmt->stmt);
+            stmt_print_destroy((stmt_print_t*)stmt->stmt);
             break;
         case STMT_EXPR:
-            stmt_expr_destroy((Stmt_expr_t*)stmt->stmt);
+            stmt_expr_destroy((stmt_expr_t*)stmt->stmt);
             break;
         case STMT_IF:
-            stmt_conditional_destroy((Stmt_conditional_t*)stmt->stmt);
+            stmt_conditional_destroy((stmt_conditional_t*)stmt->stmt);
             break;
         case STMT_DECLARATION:
-            stmt_declaration_destroy((Stmt_declaration_t*)stmt->stmt);
+            stmt_declaration_destroy((stmt_declaration_t*)stmt->stmt);
             break;
         case STMT_ASSIGNMENT:
-            stmt_assignment_destroy((Stmt_assignment_t*)stmt->stmt);
+            stmt_assignment_destroy((stmt_assignment_t*)stmt->stmt);
             break;
         case STMT_FUN:
-            stmt_function_destroy((Stmt_function_t*)stmt->stmt);
+            stmt_function_destroy((stmt_function_t*)stmt->stmt);
             break;
         case STMT_BLOCK:
-            stmt_block_destroy((Stmt_block_t * )stmt->stmt);
+            stmt_block_destroy((stmt_block_t * )stmt->stmt);
             break;
     }
 
@@ -481,7 +481,7 @@ void stmt_destroy(Stmt_t *stmt) {
 
 #pragma endregion Statements
 
-Operator token_to_operator(Token t) {
+operator_t token_to_operator(token_t t) {
     switch (t.type) {
         case EQUAL_EQUAL:
             return OP_EQUAL;
@@ -511,8 +511,24 @@ Operator token_to_operator(Token t) {
             return OP_OR;
         case BANG:
             return OP_NOT;
+        case PIPE_GREATER:
+            return OP_FORWARD;
         default:
             return OP_ERROR;
     }
 }
 
+char * literal_type_to_string(literal_type_t type) {
+    switch(type) {
+        case T_STRING:
+            return "String";
+        case T_BOOLEAN:
+            return "Boolean";
+        case T_NUMBER:
+            return "Number";
+        case T_NIL:
+            return "Nil";
+        case T_CLOSURE:
+            return "Function";
+    }    
+}

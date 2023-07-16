@@ -5,10 +5,10 @@
 #include <stdio.h>
 #include <string.h>
 
-static char* pretty_type(TokenType);
+static char* pretty_type(token_type_t);
 
 void token_free(void *token) {
-    Token *t = (Token*)token;
+    token_t *t = (token_t*)token;
     if(t->type != END)
         mem_free(t->lexeme);
     mem_free(t->literal);
@@ -16,21 +16,21 @@ void token_free(void *token) {
     return;
 }
 
-void token_print(Token tok) {
-    Log(INFO, "Line:  %d\t\tLexeme: %s\t\t\tToken Type: %s\n", tok.line, tok.lexeme,  pretty_type(tok.type));
+void token_print(token_t tok) {
+    err_log(INFO, "Line:  %d\t\tLexeme: %s\t\t\tToken Type: %s\n", tok.line, tok.lexeme,  pretty_type(tok.type));
     return;
 }
 
 void tokens_print(l_list_t tokens) {
     l_list_t current = list_reverse(tokens);
     while(current) {
-        token_print(*(Token*)current->data);
+        token_print(*(token_t*)current->data);
         current = current->next;
     }
     return;
 }
 
-Token *tokens_get(l_list_t tokens, int index) {
+token_t *tokens_get(l_list_t tokens, int index) {
     if(index >= list_len(tokens))
         return NULL;
     l_list_t current = tokens;
@@ -43,8 +43,8 @@ Token *tokens_get(l_list_t tokens, int index) {
 void tokens_dup(l_list_t source, l_list_t *dest) {
     l_list_t head = source;
     while(head) {
-        Token *duped = mem_calloc(1, sizeof(Token));
-        Token *tok = (Token*)head->data;
+        token_t *duped = mem_calloc(1, sizeof(token_t));
+        token_t *tok = (token_t*)head->data;
         duped->line = tok->line;
         duped->type = tok->type;
         duped->lexeme = tok->type != END ? strdup(tok->lexeme) : "";
@@ -54,7 +54,7 @@ void tokens_dup(l_list_t source, l_list_t *dest) {
     }
 }
 
-char *pretty_type(TokenType type) {
+char *pretty_type(token_type_t type) {
     switch(type) {
         case LEFT_PAREN:
             return "LEFT_PAREN";
@@ -138,6 +138,8 @@ char *pretty_type(TokenType type) {
             return "DOUBLE_ARROW";
         case PIPE:
             return "PIPE";
+        case PIPE_GREATER:
+            return "PIPE_GREATER";
         case MATCH:
             return "MATCH";
         case WITH:

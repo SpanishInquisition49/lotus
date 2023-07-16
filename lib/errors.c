@@ -4,9 +4,9 @@
 
 static char* pretty_log_level(int);
 static char* get_ansi_color(int);
-static enum LogLevel internal_log_level = INFO;
+static enum log_level_t internal_log_level = INFO;
 
-void Log(enum LogLevel level, const char *restrict fmt, ...) {
+void err_log(enum log_level_t level, const char *restrict fmt, ...) {
     if(level > LOG_LEVELS || level < internal_log_level) return;
     va_list args;
     va_start(args, fmt);
@@ -23,7 +23,7 @@ void Log(enum LogLevel level, const char *restrict fmt, ...) {
     va_end(args);
 }
 
-void Log_v(enum LogLevel level, const char *restrict fmt, va_list args) {
+void err_log_v(enum log_level_t level, const char *restrict fmt, va_list args) {
     if(level > LOG_LEVELS || level < internal_log_level) return;
     if(level == INFO) {
         dprintf(2,"%s[%s] " ANSI_COLOR_RESET, get_ansi_color(level), pretty_log_level(level));
@@ -33,11 +33,10 @@ void Log_v(enum LogLevel level, const char *restrict fmt, va_list args) {
         dprintf(2,"%s[%s] ", get_ansi_color(level), pretty_log_level(level));
         vdprintf(2, fmt, args);
         dprintf(2, ANSI_COLOR_RESET);
-    
     }
 }
 
-void Log_set_level(enum LogLevel level) {
+void err_log_set_level(enum log_level_t level) {
     if(level > LOG_LEVELS) return;
     internal_log_level = level;
     return;
@@ -52,7 +51,7 @@ char *pretty_log_level(int level) {
         case ERROR:
             return "ERROR";
         default:
-            return "UNDEFINED";
+            __builtin_unreachable();
     }
 }
 

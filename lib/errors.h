@@ -13,16 +13,16 @@
 #define LOG_LEVELS 3
 
 
-enum LogLevel {
+enum log_level_t {
     INFO,
     WARNING,
     ERROR,
 };
 
-void Log(enum LogLevel, const char *restrict, ...);
-void Log_v(enum LogLevel, const char *restrict, va_list);
+void err_log(enum log_level_t, const char *restrict, ...);
+void err_log_v(enum log_level_t, const char *restrict, va_list);
 
-void Log_set_level(enum LogLevel);
+void err_log_set_level(enum log_level_t);
 
 //void Log_report()
 

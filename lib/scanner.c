@@ -8,22 +8,23 @@
 #include <stdlib.h>
 #include <string.h>
 
-static void scan_token(Scanner*, char);
-static void add_token(Scanner*, TokenType, char*);
-static char advance(Scanner*);
-static char peek(Scanner*);
-static char peek_next(Scanner*);
-static int match(Scanner*, char);
-static void string(Scanner*);
-static void number(Scanner*);
-static void identifier(Scanner*);
-static int is_at_end(Scanner*);
+static void scan_token(scanner_t*, char);
+static void add_token(scanner_t*, token_type_t, char*);
+static char advance(scanner_t*);
+static char peek(scanner_t*);
+static char peek_next(scanner_t*);
+static int match(scanner_t*, char);
+static void string(scanner_t*);
+static void number(scanner_t*);
+static void identifier(scanner_t*);
+static int is_at_end(scanner_t*);
 static int is_alpha(char);
 static int is_digit(char);
 static int is_alphanumeric(char);
 static int keyword_get(char*);
 
-void scanner_init(Scanner * scanner, const char * file_name) {
+void scanner_init(scanner_t * scanner, const char * file_name) {
+    memset(scanner, 0, sizeof(*scanner));
     scanner->current = 0;
     scanner->start = 0;
     scanner->length = 0;
@@ -36,26 +37,26 @@ void scanner_init(Scanner * scanner, const char * file_name) {
     return;
 }
 
-void scanner_destroy(Scanner scanner) {
+void scanner_destroy(scanner_t scanner) {
     mem_free(scanner.source);
     list_free(scanner.tokens, token_free);
     return;
 }
 
-void scanner_errors_report(Scanner scanner) {
+void scanner_errors_report(scanner_t scanner) {
     dprintf(2, "%s[SCANNER]\t%sErrors: %d\t%sWarnings: %d%s\n", ANSI_COLOR_MAGENTA, ANSI_COLOR_RED, scanner.errors[ERROR], ANSI_COLOR_YELLOW, scanner.errors[WARNING], ANSI_COLOR_RESET);
     return;
 }
 
-int scanner_had_error(Scanner scanner) {
+int scanner_had_error(scanner_t scanner) {
     return scanner.errors[ERROR];
 }
 
-void scanner_scan_tokens(Scanner *scanner) {
+void scanner_scan_tokens(scanner_t *scanner) {
     FILE *f = fopen(scanner->filename, "r");
     if(f == NULL) {
         scanner->errors[ERROR]++;
-        Log(ERROR, "File '%s' is not a valid file\n", scanner->source);
+        err_log(ERROR, "File '%s' is not a valid file\n", scanner->source);
         exit(EXIT_FAILURE);
     }
     fseek (f, 0, SEEK_END);
@@ -73,7 +74,7 @@ void scanner_scan_tokens(Scanner *scanner) {
         char c = advance(scanner);
         scan_token(scanner, c);
     }
-    Token *eof = mem_calloc(1, sizeof(Token));
+    token_t *eof = mem_calloc(1, sizeof(token_t));
     eof->type = END;
     eof->lexeme = "";
     eof->literal = NULL;
@@ -82,7 +83,7 @@ void scanner_scan_tokens(Scanner *scanner) {
     token_print(*eof);
 }
 
-void scan_token(Scanner *scanner, char c) {
+void scan_token(scanner_t *scanner, char c) {
     switch(c) {
         case K_LEFT_PAREN:
             add_token(scanner, LEFT_PAREN, NULL);
@@ -121,7 +122,7 @@ void scan_token(Scanner *scanner, char c) {
             add_token(scanner, MOD, NULL);
             break;
         case K_PIPE:
-            add_token(scanner, PIPE, NULL);
+            add_token(scanner, match(scanner, K_GREATER) ? PIPE_GREATER : PIPE, NULL);
             break;
         case K_SEMICOLON:
             add_token(scanner, SEMICOLON, NULL);
@@ -171,14 +172,14 @@ void scan_token(Scanner *scanner, char c) {
                 identifier(scanner);
             else {
                 scanner->errors[WARNING]++;
-                Log(WARNING, "Line %d: Unknown character: '%c'\n", scanner->line_number, c);
+                err_log(WARNING, "Line %d: Unknown character: '%c'\n", scanner->line_number, c);
             }
             break;
     }
     return;
 }
 
-int is_at_end(Scanner *s) {
+int is_at_end(scanner_t *s) {
     return s->current >= s->length;
 }
 
@@ -194,28 +195,28 @@ int is_alphanumeric(char c) {
     return is_alpha(c) || is_digit(c);
 }
 
-int match(Scanner *s, char expected) {
+int match(scanner_t *s, char expected) {
     if(is_at_end(s)) return 0;
     if(peek(s) != expected) return 0;
     s->current++;
     return 1;
 }
 
-char advance(Scanner* s) {
+char advance(scanner_t* s) {
     return s->source[s->current++];
 }
 
-char peek(Scanner *s) {
+char peek(scanner_t *s) {
     if(is_at_end(s)) return '\0';
     return s->source[s->current];
 }
 
-char peek_next(Scanner *s) {
+char peek_next(scanner_t *s) {
     if(s->current+1 >= s->length) return '\0';
     return s->source[s->current+1];
 }
 
-void string(Scanner *s) {
+void string(scanner_t *s) {
     int line_start = s->line_number;
     // NOTE: special char escape should occur here
     while(peek(s) != K_DOUBLE_QUOTE && !is_at_end(s)) {
@@ -225,7 +226,7 @@ void string(Scanner *s) {
 
     if(is_at_end(s)) {
         s->errors[ERROR]++;
-        Log(ERROR, "Line %d: Missing closing \"\n", line_start);
+        err_log(ERROR, "Line %d: Missing closing \"\n", line_start);
         return;
     }
     // advance in order to consume '"' character
@@ -234,7 +235,7 @@ void string(Scanner *s) {
     add_token(s, STRING, strndup(s->source+s->start+1, len-2));
 }
 
-void number(Scanner *s) {
+void number(scanner_t *s) {
     while(is_digit(peek(s))) advance(s);
 
     // Look for a fractional part
@@ -244,23 +245,23 @@ void number(Scanner *s) {
     }
     else if(peek(s) == K_DOT && !is_digit(peek_next(s))) {
         s->errors[ERROR]++;
-        Log(ERROR, "Line %d: Wrong format for number\n", s->line_number);
+        err_log(ERROR, "Line %d: Wrong format for number\n", s->line_number);
         return;
     }
     int len = s->current - s->start;
     add_token(s, NUMBER, strndup(s->source+s->start, len));
 }
 
-void identifier(Scanner *s) {
+void identifier(scanner_t *s) {
     while(is_alphanumeric(peek(s))) advance(s);
     int len = s->current - s->start;
     char* text = strndup(s->source+s->start, len);
     add_token(s, keyword_get(text), text);
 }
 
-void add_token(Scanner *s, TokenType t, char *literal) {
+void add_token(scanner_t *s, token_type_t t, char *literal) {
     int len = s->current - s->start;
-    Token *tok = mem_calloc(1, sizeof(Token));
+    token_t *tok = mem_calloc(1, sizeof(token_t));
     tok->lexeme = strndup(s->source+s->start, len);
     tok->literal = literal;
     tok->type = t;

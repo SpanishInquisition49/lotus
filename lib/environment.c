@@ -10,7 +10,7 @@ static env_item_t* env_item_init(char*, void*);
 static void env_item_destroy(env_item_t*);
 static void env_item_free(void*);
 
-int env_len(Env *e) {
+int env_len(env_t *e) {
     int i = 0;
     l_list_t current = e->env;
     while(((env_item_t*)current->data)->identifier != NULL) {
@@ -20,19 +20,20 @@ int env_len(Env *e) {
     return i;
 }
 
-void env_init(Env* e) {
+void env_init(env_t* e) {
+    memset(e, 0, sizeof(*e));
     e->env = NULL;
     e->size = 0;
     return;
 }
 
-void env_bind(Env *e, char *identifier, void *value) {
+void env_bind(env_t *e, char *identifier, void *value) {
     list_add(&e->env, env_item_init(identifier, value));
     e->size++;
     return;
 }
 
-void *env_get(Env *e, char *key) {
+void *env_get(env_t *e, char *key) {
     l_list_t current = e->env;
     while(current != NULL) { 
         env_item_t *tmp = (env_item_t*)current->data;
@@ -43,7 +44,7 @@ void *env_get(Env *e, char *key) {
     return NULL;
 }
 
-void *env_set(Env *e, char *key, void *new_val) {
+void *env_set(env_t *e, char *key, void *new_val) {
     l_list_t current = e->env;
     while(current != NULL) {
         if(strcmp(((env_item_t*)current->data)->identifier, key) == 0) {
@@ -55,7 +56,7 @@ void *env_set(Env *e, char *key, void *new_val) {
     return NULL;
 }
 
-void env_unbind(Env *e) {
+void env_unbind(env_t *e) {
     if(e->env->data == NULL)
         return;
     l_list_t new_head = e->env->next;
@@ -67,19 +68,19 @@ void env_unbind(Env *e) {
     return;
 }
 
-void env_destroy(Env *e) {
+void env_destroy(env_t *e) {
     list_free(e->env, env_item_free);
     return;
 }
 
-void env_restore(Env *current, int old_size) {
+void env_restore(env_t *current, int old_size) {
     int n = current->size - old_size;
     for(int i=0; i<n; i++)
         env_unbind(current);
     return;
 }
 
-int env_bulk_bind(Env *env, l_list_t identifiers, l_list_t values) {
+int env_bulk_bind(env_t *env, l_list_t identifiers, l_list_t values) {
     l_list_t current_ide = identifiers;
     l_list_t current_val = values;
     while(current_ide != NULL && current_val != NULL) {

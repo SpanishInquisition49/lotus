@@ -18,9 +18,10 @@ typedef enum {
     COLON,
     SLASH,
     STAR,
-    PIPE,
     WILDCARD,
     // One or two character tokens.
+    PIPE,
+    PIPE_GREATER,
     MINUS,
     SINGLE_ARROW,
     BANG,
@@ -51,7 +52,7 @@ typedef enum {
     MATCH,
     WITH,
     END,
-} TokenType;
+} token_type_t;
 
 /**
  * @brief A lexical token
@@ -60,17 +61,17 @@ typedef enum {
  * @param int line: The line number in the source code
  */
 typedef struct {
-    TokenType type;
+    token_type_t type;
     char *lexeme;
     void *literal;
     int line;
-} Token;
+} token_t;
 
 /**
  * @brief Print the given token to the standard error
- * @param Token: the token to print
+ * @param token_t: the token to print
  */
-void token_print(Token);
+void token_print(token_t);
 
 /**
  * @brief Print the given token list
@@ -89,9 +90,9 @@ void tokens_dup(l_list_t, l_list_t*);
  * @brief Get the token at the given position from the given list
  * @param List tokens: the token list
  * @param int position: the position to retrieve
- * @return Token* a token pointer if position < list_len(tokens) or NULL
+ * @return token_t* a token pointer if position < list_len(tokens) or NULL
  */
-Token *tokens_get(l_list_t, int);
+token_t *tokens_get(l_list_t, int);
 
 /**
  * @brief Clear all the allocated data for a token

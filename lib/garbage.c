@@ -8,20 +8,45 @@
 #define MARKED 1
 #define UNMARKED 0
 
+/**
+ * Perform a DFS og the given value
+ * @param gc a pointer to the GC (used for debug purpose)
+ * @param v a pointer to the value
+ */
 static void dfs(garbage_collector_t*, value_t*);
+
+/**
+ * Perform the marking phase of the mark and sweep algorithm
+ * @param gc a pointer to the GC that will run the algorithm 
+ */
 static void mark(garbage_collector_t*);
+
+/**
+ * Perform the sweeping phase of the mark and sweep algorithm
+ * @param gc a pointer to the GC that will run the algorithm
+ */
 static void sweep(garbage_collector_t*);
+
+/**
+ * Destroy the given value
+ * @param val a pointer to the value to destroy
+ */
 static void value_destroy(value_t*);
+
+/**
+ * A wrapper for the value_destroy() function 
+ */
 static void value_free(void*);
 
-void gc_init(garbage_collector_t* gc, Env* env, mutex* mtx, cond* cond) {
+void gc_init(garbage_collector_t* gc, env_t* env, mutex* mtx, cond* cond) {
+    memset(gc, 0, sizeof(*gc));
     gc->values = NULL;
     gc->environment = env;
     gc->temporary_values = NULL;
     gc->mtx_memory = mtx;
     gc->cond_between_statements = cond;
     gc->marked = 0;
-    gc->sweeped = 0;
+    gc->swept = 0;
     return;
 }
 
@@ -31,12 +56,12 @@ void gc_destroy(garbage_collector_t *gc) {
     return;
 }
 
-void gc_store(garbage_collector_t *gc, value_t *val) {
+void gc_hold(garbage_collector_t *gc, value_t *val) {
     list_add(&gc->temporary_values, val);
     return;
 }
 
-void gc_discard(garbage_collector_t *gc, int count) {
+void gc_release(garbage_collector_t *gc, int count) {
     for(int i = 0; i<count; i++) {
         l_list_t current = gc->temporary_values;
         gc->temporary_values = current->next;
@@ -49,11 +74,11 @@ void gc_discard(garbage_collector_t *gc, int count) {
 
 void gc_run(garbage_collector_t *gc) {
     gc->marked = 0;
-    gc->sweeped = 0;
+    gc->swept = 0;
     int total = list_dl_len(gc->values);
     mark(gc);
     sweep(gc);
-    dprintf(2, "[GC]: Count:%d -> %d\tMarked:%d\tSweeped:%d\n",total, list_dl_len(gc->values), gc->marked, gc->sweeped);
+    dprintf(2, "[GC]: Count:%d -> %d\tMarked:%d\tSwept:%d\n",total, list_dl_len(gc->values), gc->marked, gc->swept);
 }
 
 void dfs(garbage_collector_t *gc, value_t* v) {
@@ -96,7 +121,7 @@ void sweep(garbage_collector_t *gc) {
         if(v->status == MARKED)
             v->status = UNMARKED;
         else {
-            gc->sweeped++;
+            gc->swept++;
             value_destroy(v);
             dl_list_t p = current->prev;
             dl_list_t n = current->next;

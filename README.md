@@ -143,26 +143,44 @@ A lower priority operator are evaluated before other higher operators, functions
 | Logical not    | !exp  | 2        | $B\to B$
 | Minus          | -exp  | 2        | $N\to N$
 
-| Binary operator |   Usage    | Priority | Domain |
-|-----------------|:----------:|:--------:|:------:|
-| Multiplication  | exp * exp  | 3        | $N\times N\to N$
-| Division        | exp / exp  | 3        | $N\times N\to N$
-| Remainder       | exp % exp  | 3        | $N\times N\to N$
-| Addition        | exp + exp  | 4        | $N\times N\to N$
-| subtraction     | exp - exp  | 4        | $N\times N\to N$
-| greater than    | exp > exp  | 5        | $N\times N\to B$
-| greater or equal| exp >= exp | 5        | $N\times N\to B$
-| lower than      | exp < exp  | 5        | $N\times N\to B$
-| lower or equal  | exp <= exp | 5        | $N\times N\to B$
-| logical and     | exp and exp| 6        | $B\times B\to B$
-| logical or      | exp or exp | 6        | $B\times B\to B$
-| equality        | exp == exp | 7        | $\alpha\times\alpha\to B$
-| not equality    | exp != exp | 7        | $\alpha\times\alpha\to B$
+| Binary operator      | Usage          | Priority | Domain |
+|----------------------|:--------------:|:--------:|:------:|
+| Multiplication       | exp * exp      | 3        | $N\times N\to N$
+| Division             | exp / exp      | 3        | $N\times N\to N$
+| Remainder            | exp % exp      | 3        | $N\times N\to N$
+| Forwarding           | exp \|> call   | 3        | $\alpha\times F\to\alpha$
+| String concatenation | exp + exp      | 4        | $S\times S\to S$
+| Addition             | exp + exp      | 4        | $N\times N\to N$
+| Subtraction          | exp - exp      | 4        | $N\times N\to N$
+| Greater than         | exp > exp      | 5        | $N\times N\to B$
+| Greater or equal     | exp >= exp     | 5        | $N\times N\to B$
+| Lower than           | exp < exp      | 5        | $N\times N\to B$
+| Lower or equal       | exp <= exp     | 5        | $N\times N\to B$
+| Logical and          | exp and exp    | 6        | $B\times B\to B$
+| Logical or           | exp or exp     | 6        | $B\times B\to B$
+| Equality             | exp == exp     | 7        | $\alpha\times\alpha\to B$
+| Not equality         | exp != exp     | 7        | $\alpha\times\alpha\to B$
+
+#### Forwarding
+
+Nested functions call can be written with the forward operator. The value on the left side of the operator will be used as the first argument of the right function call.
+
+```ts
+factorial(double(5))
+// Is equivalent to
+double(5) |> factorial()
+// Or
+5 |> double() |> factorial()
+// If a function have multiple arguments
+sum(5, y)
+// Then you can write (all arguments in the call will be shifted by 1 position)
+5 |> sum(y)
+```
 
 ## TODO
 
 * [ ] Add return statement
-* [ ] Add string concatenation
+* [x] Add string concatenation
 * [ ] Add arrays
 * [ ] Add list
 * [ ] Add pattern matching

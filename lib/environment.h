@@ -9,16 +9,16 @@ typedef struct {
 typedef struct {
     l_list_t env;
     int size;
-} Env;
+} env_t;
 
-void env_init(Env*);
-void env_bind(Env*, char*, void*);
-void *env_get(Env*, char*);
-void *env_set(Env*, char*, void*);
-void env_unbind(Env*);
-void env_destroy(Env*);
-void env_restore(Env*, int);
-int env_bulk_bind(Env*, l_list_t, l_list_t);
+void env_init(env_t*);
+void env_bind(env_t*, char*, void*);
+void *env_get(env_t*, char*);
+void *env_set(env_t*, char*, void*);
+void env_unbind(env_t*);
+void env_destroy(env_t*);
+void env_restore(env_t*, int);
+int env_bulk_bind(env_t*, l_list_t, l_list_t);
 
 #endif // !ENVIRONMENT_H
 #define ENVIRONMENT_H

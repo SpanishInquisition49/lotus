@@ -10,46 +10,50 @@
 #include "memory.h"
 #include "errors.h"
 
-static value_t *eval(Interpreter*, Exp_t*);
-static value_t *eval_literal(Interpreter *, Exp_t*);
-static value_t *eval_grouping(Interpreter*, Exp_t*);
-static value_t *eval_unary(Interpreter*, Exp_t*);
-static value_t *eval_binary(Interpreter*, Exp_t*);
-static value_t *eval_identifier(Interpreter*, Exp_t*);
-static value_t *eval_call(Interpreter*, Exp_t*);
+static value_t *eval(interpreter_t*, exp_t*);
+static value_t *eval_literal(interpreter_t *, exp_t*);
+static value_t *eval_grouping(interpreter_t*, exp_t*);
+static value_t *eval_unary(interpreter_t*, exp_t*);
+static value_t *eval_binary(interpreter_t*, exp_t*);
+static value_t *eval_identifier(interpreter_t*, exp_t*);
+static value_t *eval_call(interpreter_t*, exp_t*, value_t*);
 
-static value_t *eval_stmt(Interpreter*, Stmt_t*);
-static value_t *eval_stmt_exp(Interpreter*, Stmt_t*);
-static value_t *eval_stmt_print(Interpreter*, Stmt_t*);
-static value_t *eval_stmt_conditional(Interpreter*, Stmt_t*);
-static value_t *eval_stmt_block(Interpreter*, Stmt_t*);
-static value_t *eval_stmt_declaration(Interpreter*, Stmt_t*);
-static value_t *eval_stmt_assignment(Interpreter*, Stmt_t*);
-static value_t *eval_stmt_function(Interpreter*, Stmt_t*);
-static value_t *return_null(Interpreter*);
+// Evaluation util functions
+static value_t *eval_forwarding(interpreter_t*, exp_t*, exp_t*);
 
-static int is_equal(Interpreter*, value_t*, value_t*);
-static int is_truthy(Interpreter*, value_t*);
+static value_t *eval_stmt(interpreter_t*, stmt_t*);
+static value_t *eval_stmt_exp(interpreter_t*, stmt_t*);
+static value_t *eval_stmt_print(interpreter_t*, stmt_t*);
+static value_t *eval_stmt_conditional(interpreter_t*, stmt_t*);
+static value_t *eval_stmt_block(interpreter_t*, stmt_t*);
+static value_t *eval_stmt_declaration(interpreter_t*, stmt_t*);
+static value_t *eval_stmt_assignment(interpreter_t*, stmt_t*);
+static value_t *eval_stmt_function(interpreter_t*, stmt_t*);
+static value_t *return_null(interpreter_t*);
+
+static value_t *str_concat(interpreter_t*, value_t*, value_t*);
+
+static int is_equal(interpreter_t*, value_t*, value_t*);
+static int is_truthy(interpreter_t*, value_t*);
 static void bulk_pretty_print(l_list_t);
 static void pretty_print(value_t*);
-static void value_destroy(value_t*);
+static void raise_runtime_error(interpreter_t*, char*, ...) __attribute__((noreturn));
 
-static void raise_runtime_error(Interpreter*, char*, ...);
-
-void interpreter_init(Interpreter *interpreter, Env *env,l_list_t statements, garbage_collector_t *garbage_collector) {
+void interpreter_init(interpreter_t *interpreter, env_t *env,l_list_t statements, garbage_collector_t *garbage_collector) {
+    memset(interpreter, 0, sizeof(*interpreter));
     interpreter->statements = statements;
     interpreter->environment = env;
     interpreter->garbage_collector = garbage_collector;
     return;
 }
 
-void interpreter_destroy(Interpreter interpreter) {
+void interpreter_destroy(interpreter_t interpreter) {
     list_free(interpreter.statements, stmt_free);
     env_destroy(interpreter.environment);
     return;
 }
 
-void interpreter_eval(Interpreter* interpreter) {
+void interpreter_eval(interpreter_t* interpreter) {
     l_list_t stmts = interpreter->statements;
     while(stmts) {
         eval_stmt(interpreter, stmts->data);
@@ -58,40 +62,38 @@ void interpreter_eval(Interpreter* interpreter) {
     return;
 }
 
-value_t *eval_stmt(Interpreter *i, Stmt_t* s) {
-    value_t *res = return_null(i);
+value_t *eval_stmt(interpreter_t *i, stmt_t* s) {
     switch (s->type) {
         case STMT_EXPR:
-            res = eval_stmt_exp(i, s);
+            return eval_stmt_exp(i, s);
             break;
         case STMT_PRINT:
-            res = eval_stmt_print(i, s);
+            return eval_stmt_print(i, s);
             break;
         case STMT_IF:
-            res = eval_stmt_conditional(i, s);
+            return eval_stmt_conditional(i, s);
             break;
         case STMT_BLOCK:
-            res = eval_stmt_block(i, s);
+            return eval_stmt_block(i, s);
             //gc_run(i->garbage_collector);
             break;
         case STMT_DECLARATION:
-            res = eval_stmt_declaration(i, s);
+            return eval_stmt_declaration(i, s);
             //gc_run(i->garbage_collector);
             break;
         case STMT_ASSIGNMENT:
-            res = eval_stmt_assignment(i, s);
+            return eval_stmt_assignment(i, s);
             break;
         case STMT_FUN:
-            res = eval_stmt_function(i, s);
+            return eval_stmt_function(i, s);
             //gc_run(i->garbage_collector);
             break;
         default:
             raise_runtime_error(i, "Unimplemented Error\n");
     }
-    return res;
 }
 
-value_t *eval(Interpreter* i, Exp_t *exp) {
+value_t *eval(interpreter_t* i, exp_t *exp) {
     switch(exp->type) {
         case EXP_UNARY:
             return eval_unary(i, exp);
@@ -104,17 +106,14 @@ value_t *eval(Interpreter* i, Exp_t *exp) {
         case EXP_IDENTIFIER:
             return eval_identifier(i, exp);
         case EXP_CALL:
-            return eval_call(i, exp);
-        default: // Unreachable
+            return eval_call(i, exp, NULL);
+        default:
             raise_runtime_error(i, "Unknown expression\n");
     }
-
-    // Unreachable
-    return NULL;
 }
 
-value_t *eval_literal(Interpreter *i, Exp_t *exp) {
-    Exp_literal_t *unwrapped_exp = exp_unwrap(exp);
+value_t *eval_literal(interpreter_t *i, exp_t *exp) {
+    exp_literal_t *unwrapped_exp = exp_unwrap(exp);
     switch(unwrapped_exp->type) {
         case T_STRING:
             return gc_init_string(i->garbage_collector, unwrapped_exp->value);
@@ -125,26 +124,25 @@ value_t *eval_literal(Interpreter *i, Exp_t *exp) {
         case T_NIL:
             return gc_init_nil(i->garbage_collector);
         default:
-            //unreachable
-            return return_null(i);
+            __builtin_unreachable();
     }
 }
 
-value_t *eval_identifier(Interpreter *i, Exp_t *exp){
-    Exp_identifier_t *unwrapped_exp = exp_unwrap(exp);
+value_t *eval_identifier(interpreter_t *i, exp_t *exp){
+    exp_identifier_t *unwrapped_exp = exp_unwrap(exp);
     value_t *v = env_get(i->environment, unwrapped_exp->identifier);
     if(v == NULL)
         raise_runtime_error(i, "Undeclared identifier\n");
     return v;
 }
 
-value_t *eval_grouping(Interpreter* i, Exp_t *exp) {
-    Exp_grouping_t *unwrapped_exp = exp_unwrap(exp);
+value_t *eval_grouping(interpreter_t* i, exp_t *exp) {
+    exp_grouping_t *unwrapped_exp = exp_unwrap(exp);
     return eval(i, unwrapped_exp->exp);
 }
 
-value_t *eval_unary(Interpreter *i, Exp_t *exp) {
-    Exp_unary_t *unwrapped_exp = exp_unwrap(exp);
+value_t *eval_unary(interpreter_t *i, exp_t *exp) {
+    exp_unary_t *unwrapped_exp = exp_unwrap(exp);
     value_t *right = eval(i, unwrapped_exp->right);
     switch(unwrapped_exp->op) {
         case OP_MINUS:
@@ -156,17 +154,16 @@ value_t *eval_unary(Interpreter *i, Exp_t *exp) {
         default: // Theoretically unreachable
             raise_runtime_error(i, "Unkown operation\n");
     }
-
-    // Unreachable
-    return NULL;
 }
 
-value_t *eval_binary(Interpreter *i, Exp_t *exp) {
-    Exp_binary_t *unwrapped_exp = exp_unwrap(exp);
+value_t *eval_binary(interpreter_t *i, exp_t *exp) {
+    exp_binary_t *unwrapped_exp = exp_unwrap(exp);
+    if(unwrapped_exp->op == OP_FORWARD) 
+        return eval_forwarding(i, unwrapped_exp->left, unwrapped_exp->right);
     value_t *right = eval(i, unwrapped_exp->right);
-    gc_store(i->garbage_collector, right);
+    gc_hold(i->garbage_collector, right);
     value_t *left = eval(i, unwrapped_exp->left);
-    gc_store(i->garbage_collector, left);
+    gc_hold(i->garbage_collector, left);
     value_t *result = NULL;
     switch (unwrapped_exp->op) {
         case OP_MINUS:
@@ -185,9 +182,12 @@ value_t *eval_binary(Interpreter *i, Exp_t *exp) {
             result = gc_init_number(i->garbage_collector, *((double*)left->value) / *((double*)right->value));
             break;
         case OP_PLUS:
-            if(left->type != T_NUMBER || right->type != T_NUMBER)
-                raise_runtime_error(i, "Type Error:\t Operands must be numbers\n");
-            result = gc_init_number(i->garbage_collector, *((double*)left->value) + *((double*)right->value));
+            if(left->type == T_NUMBER && right->type == T_NUMBER)
+                result = gc_init_number(i->garbage_collector, *((double*)left->value) + *((double*)right->value));
+            else if(left->type == T_STRING && right->type == T_STRING)
+                result = str_concat(i, left, right);
+            else
+                raise_runtime_error(i, "Type Error:\t Operands must be two numbers or two strings\n");
             break;
         case OP_MOD:
             if(left->type != T_NUMBER || right->type != T_NUMBER){
@@ -234,22 +234,34 @@ value_t *eval_binary(Interpreter *i, Exp_t *exp) {
         default: // Theoretically unreachable
             raise_runtime_error(i, "Unkown Operation\n");
     }
-    gc_discard(i->garbage_collector, 2);
+    gc_release(i->garbage_collector, 2);
     return result;
 }
 
-value_t *eval_call(Interpreter *i, Exp_t *exp) {
-    Exp_call_t *unwrapped_exp = exp_unwrap(exp);
+value_t *eval_forwarding(interpreter_t *i, exp_t *left, exp_t *right) {
+    if(right->type != EXP_CALL)
+        raise_runtime_error(i, "Expected a function call after |>\n");
+    value_t *left_v = eval(i, left);
+    gc_hold(i->garbage_collector, left_v);
+    value_t *res = eval_call(i, right, left_v);
+    gc_release(i->garbage_collector, 1);
+    return res;
+}
+
+value_t *eval_call(interpreter_t *i, exp_t *exp, value_t* forwarded) {
+    exp_call_t *unwrapped_exp = exp_unwrap(exp);
     l_list_t values = NULL;
     l_list_t expressions = unwrapped_exp->actuals;
     int count = 0;
     while(expressions != NULL) {
         value_t *tmp = eval(i, expressions->data);
-        gc_store(i->garbage_collector, tmp);
+        gc_hold(i->garbage_collector, tmp);
         list_add(&values, tmp);
         count++;
         expressions = expressions->next;
     }
+    if(forwarded)
+        list_add(&values, forwarded);
     list_reverse_in_place(&values);
     value_t *v = env_get(i->environment, unwrapped_exp->identifier);
     if(v->type != T_CLOSURE)
@@ -260,7 +272,7 @@ value_t *eval_call(Interpreter *i, Exp_t *exp) {
         raise_runtime_error(i, "actuals number and formals number are not the same");
     value_t *res = eval_stmt(i, closure->body);
     env_restore(i->environment, old_size);
-    gc_discard(i->garbage_collector, count);
+    gc_release(i->garbage_collector, count);
     while(values) {
         l_list_t tmp = values;
         values = values->next;
@@ -270,64 +282,64 @@ value_t *eval_call(Interpreter *i, Exp_t *exp) {
     return res;
 }
 
-value_t *eval_stmt_exp(Interpreter *i, Stmt_t *s) {
-    Stmt_expr_t *unwrapped_stmt = stmt_unwrap(s);
+value_t *eval_stmt_exp(interpreter_t *i, stmt_t *s) {
+    stmt_expr_t *unwrapped_stmt = stmt_unwrap(s);
     return eval(i, unwrapped_stmt->exp);
 }
 
-value_t *eval_stmt_print(Interpreter *i, Stmt_t *s) {
-    Stmt_print_t *unwrapped_stmt = stmt_unwrap(s);
+value_t *eval_stmt_print(interpreter_t *i, stmt_t *s) {
+    stmt_print_t *unwrapped_stmt = stmt_unwrap(s);
     value_t *v = eval(i, unwrapped_stmt->exp);
     pretty_print(v);
     return return_null(i); 
 }
 
-value_t *eval_stmt_conditional(Interpreter *i, Stmt_t *s) {
-    Stmt_conditional_t *unwrapped_stmt = stmt_unwrap(s);
+value_t *eval_stmt_conditional(interpreter_t *i, stmt_t *s) {
+    stmt_conditional_t *unwrapped_stmt = stmt_unwrap(s);
     value_t *cond = eval(i, unwrapped_stmt->condition);
-    gc_store(i->garbage_collector, cond);
+    gc_hold(i->garbage_collector, cond);
     value_t *res = return_null(i);
     if(is_truthy(i, cond))
-        res = eval_stmt(i, unwrapped_stmt->then_brench);
-    else if(unwrapped_stmt->else_brench != NULL)
-        res = eval_stmt(i, unwrapped_stmt->else_brench);
-    gc_discard(i->garbage_collector, 1);
+        res = eval_stmt(i, unwrapped_stmt->then_branch);
+    else if(unwrapped_stmt->else_branch != NULL)
+        res = eval_stmt(i, unwrapped_stmt->else_branch);
+    gc_release(i->garbage_collector, 1);
     return res;
 }
 
-value_t *eval_stmt_block(Interpreter *i, Stmt_t *s) {
-    Stmt_block_t *unwrapped_stmt = stmt_unwrap(s);
+value_t *eval_stmt_block(interpreter_t *i, stmt_t *s) {
+    stmt_block_t *unwrapped_stmt = stmt_unwrap(s);
     l_list_t stmts = unwrapped_stmt->statements;
     int old_size = i->environment->size;
     value_t *v = return_null(i);
     int count = 0;
     while(stmts) {
         v = eval_stmt(i, stmts->data);
-        gc_store(i->garbage_collector, v);
+        gc_hold(i->garbage_collector, v);
         count++;
         stmts = stmts->next;
     }
     env_restore(i->environment, old_size);
-    gc_discard(i->garbage_collector, count);
+    gc_release(i->garbage_collector, count);
     return v;
 }
 
-value_t *eval_stmt_declaration(Interpreter *i, Stmt_t *s) {
-    Stmt_declaration_t *unwrapped_stmt = stmt_unwrap(s);
+value_t *eval_stmt_declaration(interpreter_t *i, stmt_t *s) {
+    stmt_declaration_t *unwrapped_stmt = stmt_unwrap(s);
     value_t *v = eval(i, unwrapped_stmt->exp);
     env_bind(i->environment, unwrapped_stmt->identifier, v);
     return v;
 }
 
-value_t *eval_stmt_assignment(Interpreter *i, Stmt_t *s) {
-    Stmt_assignment_t *unwrapped_stmt = stmt_unwrap(s);
+value_t *eval_stmt_assignment(interpreter_t *i, stmt_t *s) {
+    stmt_assignment_t *unwrapped_stmt = stmt_unwrap(s);
     value_t *res = eval(i, unwrapped_stmt->exp);
     env_set(i->environment, unwrapped_stmt->identifier, res);
     return res;
 }
 
-value_t *eval_stmt_function(Interpreter *i, Stmt_t *s) {
-    Stmt_function_t *unwrapped_stmt = stmt_unwrap(s);
+value_t *eval_stmt_function(interpreter_t *i, stmt_t *s) {
+    stmt_function_t *unwrapped_stmt = stmt_unwrap(s);
     closure_t tmp;
     tmp.body = unwrapped_stmt->body;
     tmp.formals = unwrapped_stmt->formals;
@@ -337,11 +349,11 @@ value_t *eval_stmt_function(Interpreter *i, Stmt_t *s) {
     return closure;
 }
 
-value_t *return_null(Interpreter *i) {
+value_t *return_null(interpreter_t *i) {
     return gc_init_nil(i->garbage_collector);
 }
 
-int is_equal(Interpreter *i, value_t *l, value_t *r) {
+int is_equal(interpreter_t *i, value_t *l, value_t *r) {
     if(l->type != r->type)
         raise_runtime_error(i, "Type Error:\tComparison between 2 different type!\n");
 
@@ -357,17 +369,14 @@ int is_equal(Interpreter *i, value_t *l, value_t *r) {
         case T_CLOSURE:
             raise_runtime_error(i, "Type Error:\t Functions cannot be compared\n");
     }
-    return 0;
 }
 
-int is_truthy(Interpreter *i, value_t *v) {
+int is_truthy(interpreter_t *i, value_t *v) {
     switch(v->type) {
         case T_BOOLEAN:
             return *((int*)v->value);
         default:
             raise_runtime_error(i, "Type Error:\tImplicit casting is not permitted!\n");
-            // Unreachable
-            return 0;
     }
 }
 
@@ -396,6 +405,14 @@ void pretty_print(value_t *v) {
     return;
 }
 
+value_t *str_concat(interpreter_t *i, value_t *left, value_t *right) {
+    char *l = strdup((char*)left->value);
+    char *r = strdup((char*)right->value);
+    value_t *res = gc_init_string(i->garbage_collector, strcat(l, r));
+    mem_free(l);
+    mem_free(r);
+    return res;
+}
 
 void bulk_pretty_print(l_list_t values) {
     l_list_t value = values;
@@ -406,10 +423,10 @@ void bulk_pretty_print(l_list_t values) {
     return;
 }
 
-void raise_runtime_error(Interpreter *i, char *msg, ...) {
+void raise_runtime_error(interpreter_t *i, char *msg, ...) {
     va_list ap;
     va_start(ap, msg);
-    Log_v(ERROR, msg, ap);
+    err_log_v(ERROR, msg, ap);
     interpreter_destroy(*i);
     va_end(ap);
     exit(EXIT_FAILURE);

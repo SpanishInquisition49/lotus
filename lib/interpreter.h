@@ -5,18 +5,18 @@
 #include "environment.h"
 #include "garbage.h"
 
-typedef Exp_literal_t Value;
+typedef exp_literal_t Value;
 
 typedef struct {
     l_list_t statements;
-    Env *environment;
+    env_t *environment;
     garbage_collector_t *garbage_collector;
-} Interpreter;
+} interpreter_t;
 
-void interpreter_init(Interpreter*, Env*, l_list_t, garbage_collector_t*);
+void interpreter_init(interpreter_t*, env_t*, l_list_t, garbage_collector_t*);
 
-void interpreter_destroy(Interpreter);
+void interpreter_destroy(interpreter_t);
 
-void interpreter_eval(Interpreter*);
+void interpreter_eval(interpreter_t*);
 
 #endif // !INTERPRETER_H
