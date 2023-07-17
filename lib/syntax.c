@@ -267,6 +267,7 @@ stmt_t *stmt_dup(stmt_t *stmt) {
             duped->stmt = stmt_declaration_dup(stmt->stmt);
             break;
         case STMT_EXPR:
+        case STMT_RETURN:
             duped->stmt = stmt_expr_dup(stmt->stmt);
             break;
         case STMT_PRINT:
@@ -456,6 +457,7 @@ void stmt_destroy(stmt_t *stmt) {
             stmt_print_destroy((stmt_print_t*)stmt->stmt);
             break;
         case STMT_EXPR:
+        case STMT_RETURN:
             stmt_expr_destroy((stmt_expr_t*)stmt->stmt);
             break;
         case STMT_IF:

@@ -32,6 +32,7 @@ typedef enum {
     STMT_BLOCK,
     STMT_DECLARATION,
     STMT_ASSIGNMENT,
+    STMT_RETURN,
 } stmt_type_t;
 
 typedef enum {

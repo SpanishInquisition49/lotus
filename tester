@@ -43,8 +43,9 @@ executable=lotus
 
 echo -e "${MAGENTA}Running tests ${NOCOLOR}"
 
-RunTestSuite "'-15*2/5 == 15*2/5*(-1)' should evaluate to true" ./$executable "$(cat ./test/.arithmetic-output)" ./test/arithmetic.lotus
-RunTestSuite "'\"Hello\" != \"World\"' should evaluate to true" ./$executable "$(cat ./test/.string-output)" ./test/string.lotus
-RunTestSuite 'if("bar" == "foo") should evaluate the else branch' ./$executable "$(cat ./test/.conditional-output)" ./test/conditional.lotus
+RunTestSuite 'Basic arithmetic'         ./$executable   "$(cat ./test/.arithmetic-output)"  ./test/arithmetic.lts
+RunTestSuite 'Strings'                  ./$executable   "$(cat ./test/.string-output)"      ./test/string.lts
+RunTestSuite 'Conditional statements'   ./$executable   "$(cat ./test/.conditional-output)" ./test/conditional.lts
+RunTestSuite 'Recursion and forwarding' ./$executable   "$(cat ./test/.functions-output)"   ./test/functions.lts
 
 exit 0

@@ -1,0 +1,19 @@
+fun double(x) x*2;
+
+fun fact(x) {
+    if(x==0)
+        1;
+    else
+        x*fact(x-1);
+}
+
+fun assert_equality(x,y) {
+    if(x != y)
+        print "Assertion failed";
+    else
+        print "Same";
+}
+
+2   |> double()
+    |> fact()
+    |> assert_equality(24);

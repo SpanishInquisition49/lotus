@@ -1,8 +1,10 @@
+#include <setjmp.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <stdarg.h>
 #include <math.h>
+#include <stdint.h>
 #include "garbage.h"
 #include "interpreter.h"
 #include "list.h"
@@ -44,6 +46,9 @@ void interpreter_init(interpreter_t *interpreter, env_t *env,l_list_t statements
     interpreter->statements = statements;
     interpreter->environment = env;
     interpreter->garbage_collector = garbage_collector;
+    //interpreter->stack_pointer = 0;
+    //memset(interpreter->stack, 0, sizeof(jmp_buf) * STACK_SIZE);
+    //interpreter->returned_value = NULL;
     return;
 }
 
@@ -64,6 +69,11 @@ void interpreter_eval(interpreter_t* interpreter) {
 
 value_t *eval_stmt(interpreter_t *i, stmt_t* s) {
     switch (s->type) {
+        //case STMT_RETURN:
+        //    if(i->stack_pointer == 0)
+        //        raise_runtime_error(i, "return can used only inside a function\n");
+        //    i->returned_value = eval_stmt_exp(i, s);
+        //    longjmp(i->stack[i->stack_pointer], 1);
         case STMT_EXPR:
             return eval_stmt_exp(i, s);
             break;
@@ -132,7 +142,7 @@ value_t *eval_identifier(interpreter_t *i, exp_t *exp){
     exp_identifier_t *unwrapped_exp = exp_unwrap(exp);
     value_t *v = env_get(i->environment, unwrapped_exp->identifier);
     if(v == NULL)
-        raise_runtime_error(i, "Undeclared identifier\n");
+        raise_runtime_error(i, "The identifier '%s' was not declared\n", unwrapped_exp->identifier);
     return v;
 }
 
@@ -264,12 +274,21 @@ value_t *eval_call(interpreter_t *i, exp_t *exp, value_t* forwarded) {
         list_add(&values, forwarded);
     list_reverse_in_place(&values);
     value_t *v = env_get(i->environment, unwrapped_exp->identifier);
+    if(v == NULL)
+        raise_runtime_error(i, "The identifier '%s' was not declared\n", unwrapped_exp->identifier);
     if(v->type != T_CLOSURE)
         raise_runtime_error(i, "The identifier '%s' is not a function name\n", unwrapped_exp->identifier);
     closure_t *closure = (closure_t*)v->value;
     int old_size = i->environment->size;
     if(!env_bulk_bind(i->environment, closure->formals, values))
         raise_runtime_error(i, "actuals number and formals number are not the same");
+    // preparing for the long jump (return)
+    // TODO: fix setjmp e longjmp
+    //i->stack_pointer++;
+    //if(i->stack_pointer > STACK_SIZE)
+    //    raise_runtime_error(i, "Stack overflow\n");
+    //int jump = setjmp(i->stack[i->stack_pointer]);
+    //value_t *res = jump ? i->returned_value : eval_stmt(i, closure->body);
     value_t *res = eval_stmt(i, closure->body);
     env_restore(i->environment, old_size);
     gc_release(i->garbage_collector, count);
@@ -279,6 +298,7 @@ value_t *eval_call(interpreter_t *i, exp_t *exp, value_t* forwarded) {
         mem_free(tmp);
     }
     res->status = 1;
+    //i->stack_pointer--;
     return res;
 }
 
@@ -314,7 +334,8 @@ value_t *eval_stmt_block(interpreter_t *i, stmt_t *s) {
     value_t *v = return_null(i);
     int count = 0;
     while(stmts) {
-        v = eval_stmt(i, stmts->data);
+        stmt_t *stmt = (stmt_t*)stmts->data;
+        v = eval_stmt(i, stmt);
         gc_hold(i->garbage_collector, v);
         count++;
         stmts = stmts->next;

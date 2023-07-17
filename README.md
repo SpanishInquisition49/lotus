@@ -148,7 +148,6 @@ A lower priority operator are evaluated before other higher operators, functions
 | Multiplication       | exp * exp      | 3        | $N\times N\to N$
 | Division             | exp / exp      | 3        | $N\times N\to N$
 | Remainder            | exp % exp      | 3        | $N\times N\to N$
-| Forwarding           | exp \|> call   | 3        | $\alpha\times F\to\alpha$
 | String concatenation | exp + exp      | 4        | $S\times S\to S$
 | Addition             | exp + exp      | 4        | $N\times N\to N$
 | Subtraction          | exp - exp      | 4        | $N\times N\to N$
@@ -160,6 +159,7 @@ A lower priority operator are evaluated before other higher operators, functions
 | Logical or           | exp or exp     | 6        | $B\times B\to B$
 | Equality             | exp == exp     | 7        | $\alpha\times\alpha\to B$
 | Not equality         | exp != exp     | 7        | $\alpha\times\alpha\to B$
+| Forwarding           | exp \|> call   | 8        | $\alpha\times F\to\alpha$
 
 #### Forwarding
 

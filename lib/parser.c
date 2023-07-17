@@ -9,6 +9,7 @@
 #include <string.h>
 
 static exp_t *expression(parser_t*);
+static exp_t *forwarding(parser_t*);
 static exp_t *equality(parser_t*);
 static exp_t *boolean_algebra(parser_t*);
 static exp_t *comparison(parser_t*);
@@ -38,6 +39,7 @@ static stmt_t *stmt_block(parser_t*);
 static stmt_t *stmt_declaration(parser_t*);
 static stmt_t *stmt_assignment(parser_t*);
 static stmt_t *stmt_function_declaration(parser_t*);
+static stmt_t *stmt_return(parser_t*);
 
 void parser_init(parser_t *parser, l_list_t tokens) {
     memset(parser, 0, sizeof(*parser));
@@ -79,7 +81,18 @@ void parser_destroy(parser_t parser) {
 }
 
 exp_t *expression(parser_t *p) {
-    return equality(p);
+    return forwarding(p);
+}
+
+exp_t *forwarding(parser_t *p) {
+    exp_t * expr = equality(p);
+    while(match(p, 1, PIPE_GREATER)) {
+        token_t *prev = peek_previous(p);
+        exp_t *right = equality(p);
+        exp_binary_t *e = exp_binary_init(expr, OP_FORWARD, right);
+        expr = exp_init(EXP_BINARY, e);
+    }
+    return expr;
 }
 
 exp_t *equality(parser_t *p) {
@@ -148,7 +161,7 @@ exp_t *term(parser_t *p) {
 exp_t *factor(parser_t *p) {
    exp_t *expr = NULL;
    expr = unary(p);
-   while(match(p, 4, SLASH, STAR, MOD, PIPE_GREATER)) {
+   while(match(p, 3, SLASH, STAR, MOD)) {
         token_t *prev = peek_previous(p);
         exp_t *right = unary(p);
         operator_t op = OP_ERROR;
@@ -326,6 +339,7 @@ stmt_t *statement(parser_t *p) {
     if(match(p, 1, LEFT_BRACE)) return stmt_block(p);
     if(match(p, 1, IF)) return stmt_condition(p);
     if(match(p, 1, PRINT)) return stmt_print(p);
+    if(match(p, 1, RETURN)) return stmt_return(p);
     return stmt_expr(p);
 }
 
@@ -402,3 +416,9 @@ stmt_t *stmt_function_declaration(parser_t *p) {
     return stmt_init(STMT_FUN, s, t->line);
 }
 
+stmt_t *stmt_return(parser_t *p) {
+    exp_t *exp = expression(p);
+    stmt_expr_t *s = stmt_expr_init(exp);
+    token_t *t = consume(p, SEMICOLON, "Missing ';' after return\n");
+    return stmt_init(STMT_RETURN, s, t->line);    
+}

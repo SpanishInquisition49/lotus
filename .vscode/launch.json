@@ -8,7 +8,7 @@
       "program": "${workspaceFolder}/lotus",
       "cwd": "${workspaceFolder}",
       "args": [
-          "${workspaceFolder}/test/arithmetic.lotus"
+          "${workspaceFolder}/test/arithmetic.lts"
       ]
     },
     {
@@ -18,7 +18,7 @@
       "program": "${workspaceFolder}/lotus",
       "cwd": "${workspaceFolder}",
       "args": [
-          "${workspaceFolder}/test/arithmetic.lotus"
+          "${workspaceFolder}/test/arithmetic.lts"
       ]
     }
   ]
