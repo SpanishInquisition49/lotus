@@ -68,18 +68,6 @@ void list_reverse_in_place(l_list_t *l) {
     return;
 }
 
-l_list_t list_dup(l_list_t l) {
-    l_list_t res = NULL;
-    list_reverse_in_place(&l);
-    l_list_t current = l;
-    while(current) {
-        list_add(&res, current->data);
-        current = current->next;
-    }
-    list_reverse_in_place(&l);
-    return res;
-}
-
 void list_free(l_list_t list, call_back_free_t fn_free) {
     if(list == NULL) return;
     l_list_t head = list;

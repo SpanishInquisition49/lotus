@@ -7,6 +7,7 @@
 #include <stdarg.h>
 #include <stdio.h>
 #include <string.h>
+#include <setjmp.h>
 
 static exp_t *expression(parser_t*);
 static exp_t *forwarding(parser_t*);
@@ -45,8 +46,6 @@ void parser_init(parser_t *parser, l_list_t tokens) {
     memset(parser, 0, sizeof(*parser));
     parser->current = 0;
     parser->tokens = tokens;
-    for(int i=0; i<LOG_LEVELS; i++)
-        parser->errors[i] = 0;
     return;
 }
 
@@ -87,7 +86,6 @@ exp_t *expression(parser_t *p) {
 exp_t *forwarding(parser_t *p) {
     exp_t * expr = equality(p);
     while(match(p, 1, PIPE_GREATER)) {
-        token_t *prev = peek_previous(p);
         exp_t *right = equality(p);
         exp_binary_t *e = exp_binary_init(expr, OP_FORWARD, right);
         expr = exp_init(EXP_BINARY, e);
@@ -319,7 +317,8 @@ void throw_error(parser_t *p, char *msg) {
         err_log(ERROR, "[Line: %d] at end: %s", t.line, msg);
     else
         err_log(ERROR, "[Line: %d] at '%s': %s", t.line, t.lexeme, msg);
-    return;
+    // This will jump to the statement function and notify that an error as occurred
+    longjmp(p->checkpoint, 1);
 }
 
 void parser_log(parser_t *p) {
@@ -333,6 +332,14 @@ int is_at_end(parser_t* p) {
 }
 
 stmt_t *statement(parser_t *p) {
+    // This jump act as a try/catch block
+    // if an expression throw an error then a synchronize procedure is called 
+    // and the parser will continue to parse other statements in order to give an accurate error reports
+    int jmp = setjmp(p->checkpoint);
+    if(jmp) {
+        synchronize(p);
+        return NULL;
+    }
     if(match(p, 1, VAR)) return stmt_declaration(p);
     if(match(p, 1, FUN)) return stmt_function_declaration(p);
     if(check(p, IDENTIFIER)) return peek_next(p)->type == EQUAL ? stmt_assignment(p) : stmt_expr(p);

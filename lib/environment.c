@@ -6,19 +6,24 @@
 #include "list.h"
 #include "memory.h"
 
+/**
+ * Initialize a Ide x Val pair
+ * @param ide the identifier
+ * @param value a value pointer
+ * @return a pointer to the Ide x Val pair  
+ */
 static env_item_t* env_item_init(char*, void*);
-static void env_item_destroy(env_item_t*);
-static void env_item_free(void*);
 
-int env_len(env_t *e) {
-    int i = 0;
-    l_list_t current = e->env;
-    while(((env_item_t*)current->data)->identifier != NULL) {
-        i++;
-        current = current->next;
-    }
-    return i;
-}
+/**
+ * Destroy the given Ide x Val pair
+ * @param item a pointer to the Ide x Val pair 
+ */
+static void env_item_destroy(env_item_t*);
+
+/**
+ * A wrapper for the env_item_destroy 
+ */
+static void env_item_free(void*);
 
 void env_init(env_t* e) {
     memset(e, 0, sizeof(*e));

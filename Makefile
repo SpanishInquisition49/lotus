@@ -1,6 +1,6 @@
 SHELL		:=	/bin/bash
 CC			:=	gcc
-CFLAGS		:=	-g -Wall -pedantic -Wextra -Wunknown-pragmas
+CFLAGS		:=	-g -Wall -pedantic -Wextra -Wno-unknown-pragmas -Wno-unused-parameter
 VFLAGS		:= 	--leak-check=full --show-leak-kinds=all --track-origins=yes --trace-children=yes
 
 # Targets

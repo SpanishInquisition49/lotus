@@ -39,6 +39,8 @@ exp_t *exp_dup(exp_t *exp) {
         case EXP_CALL:
             duped->exp = exp_call_dup(exp->exp);
             break;
+        default:
+            __builtin_unreachable();
     }
 
     return duped;
@@ -93,6 +95,8 @@ exp_literal_t *exp_literal_init(literal_type_t type, void* value) {
             e->value = value;
             break;
         }
+        default:
+            __builtin_unreachable();
     }
     return e;
 }
@@ -119,6 +123,8 @@ exp_literal_t *exp_literal_dup(exp_literal_t *exp) {
         case T_NIL:
             duped->value = NULL;
             break;
+        default:
+            __builtin_unreachable();
     }
     return duped;
 }
@@ -279,6 +285,8 @@ stmt_t *stmt_dup(stmt_t *stmt) {
         case STMT_ASSIGNMENT:
             duped->stmt = stmt_assignment_dup(stmt->stmt);
             break;
+        default:
+            __builtin_unreachable();
     }
     return duped;
 }
@@ -452,6 +460,8 @@ void *stmt_unwrap(stmt_t *s) {
 }
 
 void stmt_destroy(stmt_t *stmt) {
+    if(stmt == NULL)
+        return;
     switch(stmt->type) {
         case STMT_PRINT:
             stmt_print_destroy((stmt_print_t*)stmt->stmt);
@@ -475,6 +485,8 @@ void stmt_destroy(stmt_t *stmt) {
         case STMT_BLOCK:
             stmt_block_destroy((stmt_block_t * )stmt->stmt);
             break;
+        default:
+            __builtin_unreachable();
     }
 
     mem_free(stmt);
@@ -532,5 +544,6 @@ char * literal_type_to_string(literal_type_t type) {
             return "Nil";
         case T_CLOSURE:
             return "Function";
-    }    
+    } 
+    __builtin_unreachable();
 }

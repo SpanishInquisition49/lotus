@@ -15,33 +15,182 @@
 static int stack_pointer;
 static jmp_buf stack[STACK_SIZE];
 
+/**
+ * Evaluate the given expression
+ * @param i a pointer to the interpreter
+ * @param exp a pointer to the expression to evaluate
+ * @return a pointer to the value obtained
+ * @note This is a facade for the real evaluation functions
+ */
 static value_t *eval(interpreter_t*, exp_t*);
+/**
+ * Evaluate the given literal expression
+ * @param i a pointer to the interpreter
+ * @param exp a pointer to the expression to evaluate
+ * @return a pointer to the value obtained 
+ * @note Auxiliary function used inside the main eval function
+ */
 static value_t *eval_literal(interpreter_t *, exp_t*);
+/**
+ * Evaluate the given grouping expression
+ * @param i a pointer to the interpreter
+ * @param exp a pointer to the expression to evaluate
+ * @return a pointer to the value obtained 
+ * @note Auxiliary function used inside the main eval function
+ */
 static value_t *eval_grouping(interpreter_t*, exp_t*);
+/**
+ * Evaluate the given unary expression
+ * @param i a pointer to the interpreter
+ * @param exp a pointer to the expression to evaluate
+ * @return a pointer to the value obtained 
+ * @note Auxiliary function used inside the main eval function
+ */
 static value_t *eval_unary(interpreter_t*, exp_t*);
+/**
+ * Evaluate the given binary expression
+ * @param i a pointer to the interpreter
+ * @param exp a pointer to the expression to evaluate
+ * @return a pointer to the value obtained 
+ * @note Auxiliary function used inside the main eval function
+ */
 static value_t *eval_binary(interpreter_t*, exp_t*);
+/**
+ * Evaluate the given identifier expression
+ * @param i a pointer to the interpreter
+ * @param exp a pointer to the expression to evaluate
+ * @return a pointer to the value obtained 
+ * @note Auxiliary function used inside the main eval function
+ */
 static value_t *eval_identifier(interpreter_t*, exp_t*);
+/**
+ * Evaluate the given call expression
+ * @param i a pointer to the interpreter
+ * @param exp a pointer to the expression to evaluate
+ * @param forwarded a pointer to a forwarded value to be used as a first argument
+ * @return a pointer to the value obtained 
+ * @note Auxiliary function used inside the main eval function
+ */
 static value_t *eval_call(interpreter_t*, exp_t*, value_t*);
-
-// Evaluation util functions
+/**
+ * Evaluate the given forwarding expression
+ * @param i a pointer to the interpreter
+ * @param left a pointer to the left side expression
+ * @param right a pointer to the right side expression
+ * @return a pointer to the value obtained
+ * @note Auxiliary function used inside the eval_binary function 
+ */
 static value_t *eval_forwarding(interpreter_t*, exp_t*, exp_t*);
 
+/**
+ * Evaluate the given statement
+ * @param i a pointer to the interpreter
+ * @param s a pointer to the statement to evaluate
+ * @return a pointer to the value obtained
+ * @note This is a facade for the real statement evaluation functions
+ */
 static value_t *eval_stmt(interpreter_t*, stmt_t*);
+/**
+ * Evaluate the given statement expression
+ * @param i a pointer to the interpreter
+ * @param stmt a pointer to the statement to evaluate
+ * @return a pointer to the value obtained 
+ * @note Auxiliary function used inside the main eval_stmt function
+ */
 static value_t *eval_stmt_exp(interpreter_t*, stmt_t*);
+/**
+ * Evaluate the given statement print
+ * @param i a pointer to the interpreter
+ * @param stmt a pointer to the statement to evaluate
+ * @return a pointer to the value obtained 
+ * @note Auxiliary function used inside the main eval_stmt function
+ */
 static value_t *eval_stmt_print(interpreter_t*, stmt_t*);
+/**
+ * Evaluate the given statement conditional
+ * @param i a pointer to the interpreter
+ * @param stmt a pointer to the statement to evaluate
+ * @return a pointer to the value obtained 
+ * @note Auxiliary function used inside the main eval_stmt function
+ */
 static value_t *eval_stmt_conditional(interpreter_t*, stmt_t*);
+/**
+ * Evaluate the given statement block
+ * @param i a pointer to the interpreter
+ * @param stmt a pointer to the statement to evaluate
+ * @return a pointer to the value obtained 
+ * @note Auxiliary function used inside the main eval_stmt function
+ */
 static value_t *eval_stmt_block(interpreter_t*, stmt_t*);
+/**
+ * Evaluate the given statement expression
+ * @param i a pointer to the interpreter
+ * @param stmt a pointer to the statement to evaluate
+ * @return a pointer to the value obtained 
+ * @note Auxiliary function used inside the main eval_stmt function
+ */
 static value_t *eval_stmt_declaration(interpreter_t*, stmt_t*);
+/**
+ * Evaluate the given statement assignment
+ * @param i a pointer to the interpreter
+ * @param stmt a pointer to the statement to evaluate
+ * @return a pointer to the value obtained 
+ * @note Auxiliary function used inside the main eval_stmt function
+ */
 static value_t *eval_stmt_assignment(interpreter_t*, stmt_t*);
+/**
+ * Evaluate the given statement function declaration
+ * @param i a pointer to the interpreter
+ * @param stmt a pointer to the statement to evaluate
+ * @return a pointer to the value obtained 
+ * @note Auxiliary function used inside the main eval_stmt function
+ */
 static value_t *eval_stmt_function(interpreter_t*, stmt_t*);
+
+/**
+ * @note Utility function
+ * @return Nil in the Lotus Language 
+ */
 static value_t *return_null(interpreter_t*);
-
+/**
+ * Concatenate two strings in the Lotus Language
+ * @return a value pointer to the new string
+ * @note Utility function 
+ */
 static value_t *str_concat(interpreter_t*, value_t*, value_t*);
-
+/**
+ * Check if the two given value in the Lotus Language are equal
+ * @param i a pointer to the interpreter
+ * @param l a pointer to the left side value
+ * @param r a pointer to the right side value
+ * @return 1 if they are they are equal, 0 otherwise
+ * @note Utility function
+ */
 static int is_equal(interpreter_t*, value_t*, value_t*);
+/**
+ * Check if the given value is truthy
+ * @param i a pointer to the interpreter
+ * @param v a pointer to the value 
+ * @note Utility function
+ */
 static int is_truthy(interpreter_t*, value_t*);
+/**
+ * Pretty print a list of values
+ * @param values a list of values to be printed 
+ * @note Utility function
+ */
 static void bulk_pretty_print(l_list_t);
+/**
+ * Pretty print a value
+ * @param v a pointer to the value to be printed 
+ * @note Utility function
+ */
 static void pretty_print(value_t*);
+/**
+ * Stop the execution and show a formatted error message
+ * @param i a pointer to the interpreter
+ * @param msg the message to be printed
+ */
 static void raise_runtime_error(interpreter_t*, char*, ...) __attribute__((noreturn));
 
 void interpreter_init(interpreter_t *interpreter, env_t *env,l_list_t statements, garbage_collector_t *garbage_collector) {
@@ -391,6 +540,7 @@ int is_equal(interpreter_t *i, value_t *l, value_t *r) {
         case T_CLOSURE:
             raise_runtime_error(i, "Type Error:\t Functions cannot be compared\n");
     }
+    __builtin_unreachable();
 }
 
 int is_truthy(interpreter_t *i, value_t *v) {
@@ -453,4 +603,3 @@ void raise_runtime_error(interpreter_t *i, char *msg, ...) {
     va_end(ap);
     exit(EXIT_FAILURE);
 }
-

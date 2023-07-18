@@ -4,11 +4,13 @@
 #include "errors.h"
 #include "syntax.h"
 #include "list.h"
+#include <setjmp.h>
 
 typedef struct {
     l_list_t tokens;
     int current;
     int errors[LOG_LEVELS];
+    jmp_buf checkpoint;
 } parser_t;
 
 void parser_init(parser_t*, l_list_t tokens);

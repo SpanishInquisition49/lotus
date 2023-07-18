@@ -15,10 +15,25 @@ typedef struct {
     value_t *returned_value;
 } interpreter_t;
 
+/**
+ * Initialize the given interpreter
+ * @param interpreter a pointer to the interpreter to initialize
+ * @param env a pointer to the environment to use
+ * @param statements a list of statements to be interpreted
+ * @param garbage_collector a pointer to the GC to use 
+ */
 void interpreter_init(interpreter_t*, env_t*, l_list_t, garbage_collector_t*);
 
+/**
+ * Destroy the given interpreter
+ * @param interpreter a pointer to the interpreter to destroy 
+ */
 void interpreter_destroy(interpreter_t);
 
+/**
+ * Run the given interpreter
+ * @param interpreter a pointer to the interpreter to run 
+ */
 void interpreter_eval(interpreter_t*);
 
 #endif // !INTERPRETER_H

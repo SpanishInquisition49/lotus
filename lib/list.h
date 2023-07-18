@@ -28,6 +28,4 @@ l_list_t list_reverse(l_list_t);
 
 void list_reverse_in_place(l_list_t*);
 
-l_list_t list_dup(l_list_t);
-
 #endif // !LIST_H
