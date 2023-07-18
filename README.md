@@ -60,17 +60,18 @@ let x = 2+3; // add to the env x:=2 and yield 2
 
 ### Functions declarations
 
-Functions are declared with the keyword *fun*, like normal declarations a function declaration extend the environment and yield the closure as a value.
+Functions are declared with the keyword *fun*, like normal declarations a function declaration extend the environment and yield the closure as a value. A function implicitly return the result of the last statement/expression or they can explicitly return a value with the ``return`` keyword.
 
-```ml
+```js
 fun ide([formals]) body
-//example
+// Implicit return example
 fun double(x) x*2;
+// Explicit return example
 fun fact(x) {
     if(x==0)
-        1;
+        return 1;
     else
-        x*fact(x-1);
+        return x*fact(x-1);
 }
 ```
 
@@ -114,7 +115,7 @@ print x;
 
 ### Function calls
 
-A function call is formally an expression, a call is formed by an identifier followed by the list of actual parameters (a list of expressions). **Note:** for now the return statement is unimplemented, but the default return value is the last yielded value from the body.
+A function call is formally an expression, a call is formed by an identifier followed by the list of actual parameters (a list of expressions).
 
 ```js
 ide([actual]);
@@ -179,7 +180,7 @@ sum(5, y)
 
 ## TODO
 
-* [ ] Add return statement
+* [x] Add return statement
 * [x] Add string concatenation
 * [ ] Add arrays
 * [ ] Add list

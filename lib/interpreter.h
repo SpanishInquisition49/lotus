@@ -12,9 +12,7 @@ typedef struct {
     l_list_t statements;
     env_t *environment;
     garbage_collector_t *garbage_collector;
-    //int stack_pointer;
-    //jmp_buf stack[STACK_SIZE];
-    //value_t *returned_value;
+    value_t *returned_value;
 } interpreter_t;
 
 void interpreter_init(interpreter_t*, env_t*, l_list_t, garbage_collector_t*);

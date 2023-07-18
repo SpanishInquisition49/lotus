@@ -12,6 +12,9 @@
 #include "memory.h"
 #include "errors.h"
 
+static int stack_pointer;
+static jmp_buf stack[STACK_SIZE];
+
 static value_t *eval(interpreter_t*, exp_t*);
 static value_t *eval_literal(interpreter_t *, exp_t*);
 static value_t *eval_grouping(interpreter_t*, exp_t*);
@@ -42,13 +45,13 @@ static void pretty_print(value_t*);
 static void raise_runtime_error(interpreter_t*, char*, ...) __attribute__((noreturn));
 
 void interpreter_init(interpreter_t *interpreter, env_t *env,l_list_t statements, garbage_collector_t *garbage_collector) {
-    memset(interpreter, 0, sizeof(*interpreter));
+    memset(interpreter, 0, sizeof(interpreter_t));
     interpreter->statements = statements;
     interpreter->environment = env;
     interpreter->garbage_collector = garbage_collector;
-    //interpreter->stack_pointer = 0;
-    //memset(interpreter->stack, 0, sizeof(jmp_buf) * STACK_SIZE);
-    //interpreter->returned_value = NULL;
+    interpreter->returned_value = NULL;
+    stack_pointer = 0;
+    memset(stack, 0, sizeof(jmp_buf) * STACK_SIZE);
     return;
 }
 
@@ -69,11 +72,11 @@ void interpreter_eval(interpreter_t* interpreter) {
 
 value_t *eval_stmt(interpreter_t *i, stmt_t* s) {
     switch (s->type) {
-        //case STMT_RETURN:
-        //    if(i->stack_pointer == 0)
-        //        raise_runtime_error(i, "return can used only inside a function\n");
-        //    i->returned_value = eval_stmt_exp(i, s);
-        //    longjmp(i->stack[i->stack_pointer], 1);
+        case STMT_RETURN:
+            if(stack_pointer - 1 < 0)
+                raise_runtime_error(i, "return can used only inside a function\n");
+            i->returned_value = eval_stmt_exp(i, s);
+            longjmp(stack[stack_pointer - 1], 1);
         case STMT_EXPR:
             return eval_stmt_exp(i, s);
             break;
@@ -282,23 +285,21 @@ value_t *eval_call(interpreter_t *i, exp_t *exp, value_t* forwarded) {
     int old_size = i->environment->size;
     if(!env_bulk_bind(i->environment, closure->formals, values))
         raise_runtime_error(i, "actuals number and formals number are not the same");
-    // preparing for the long jump (return)
-    // TODO: fix setjmp e longjmp
-    //i->stack_pointer++;
-    //if(i->stack_pointer > STACK_SIZE)
-    //    raise_runtime_error(i, "Stack overflow\n");
-    //int jump = setjmp(i->stack[i->stack_pointer]);
-    //value_t *res = jump ? i->returned_value : eval_stmt(i, closure->body);
-    value_t *res = eval_stmt(i, closure->body);
-    env_restore(i->environment, old_size);
     gc_release(i->garbage_collector, count);
+    // preparing for the long jump (return)
+    int old_sp = stack_pointer;
+    if(stack_pointer >= STACK_SIZE)
+        raise_runtime_error(i, "Stack overflow\n");
+    int jmp = setjmp(stack[stack_pointer++]);
+    value_t *res = jmp ? i->returned_value : eval_stmt(i, closure->body);
+    env_restore(i->environment, old_size);
     while(values) {
         l_list_t tmp = values;
         values = values->next;
         mem_free(tmp);
     }
+    stack_pointer = old_sp;
     res->status = 1;
-    //i->stack_pointer--;
     return res;
 }
 
