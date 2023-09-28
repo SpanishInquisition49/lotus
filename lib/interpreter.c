@@ -83,6 +83,19 @@ static value_t *eval_call(interpreter_t*, exp_t*, value_t*);
 static value_t *eval_forwarding(interpreter_t*, exp_t*, exp_t*);
 
 /**
+ * Lazy evaluate left and right side of values of an expression
+ * @param i a pointer to the interpreter
+ * @param op the type of the operation
+ * @param left a pointer to the left side expression
+ * @param right a pointer to the right side expression
+ * @param left_v a pointer to the left side value
+ * @param right_v a pointer to the right side value
+ * @return 1 if a short circuit happened, 0 otherwise
+ * @note This function do not perform the operation
+ */
+static int eval_lazy(interpreter_t*, operator_t, exp_t*, exp_t*, value_t**, value_t**);
+
+/**
  * Evaluate the given statement
  * @param i a pointer to the interpreter
  * @param s a pointer to the statement to evaluate
@@ -191,7 +204,9 @@ static void pretty_print(value_t*);
  * @param i a pointer to the interpreter
  * @param msg the message to be printed
  */
-static void raise_runtime_error(interpreter_t*, char*, ...) __attribute__((noreturn));
+__attribute__((noreturn))
+__attribute__((format (printf, 2, 3)))
+static void raise_runtime_error(interpreter_t*, char*, ...);
 
 void interpreter_init(interpreter_t *interpreter, env_t *env,l_list_t statements, garbage_collector_t *garbage_collector) {
     memset(interpreter, 0, sizeof(interpreter_t));
@@ -320,30 +335,33 @@ value_t *eval_unary(interpreter_t *i, exp_t *exp) {
 
 value_t *eval_binary(interpreter_t *i, exp_t *exp) {
     exp_binary_t *unwrapped_exp = exp_unwrap(exp);
-    if(unwrapped_exp->op == OP_FORWARD) 
-        return eval_forwarding(i, unwrapped_exp->left, unwrapped_exp->right);
-    value_t *right = eval(i, unwrapped_exp->right);
-    gc_hold(i->garbage_collector, right);
-    value_t *left = eval(i, unwrapped_exp->left);
-    gc_hold(i->garbage_collector, left);
+    int short_circuit = 0;
+    value_t *right = NULL;
+    value_t *left = NULL;
     value_t *result = NULL;
     switch (unwrapped_exp->op) {
+        case OP_FORWARD:
+            return eval_forwarding(i, unwrapped_exp->left, unwrapped_exp->right);
         case OP_MINUS:
+            short_circuit = eval_lazy(i, unwrapped_exp->op, unwrapped_exp->left, unwrapped_exp->right, &left, &right);
             if(left->type != T_NUMBER || right->type != T_NUMBER)
                 raise_runtime_error(i, "Type Error:\t Operands must be numbers\n");
             result = gc_init_number(i->garbage_collector, *((double*)left->value) - *((double*)right->value));
             break;
         case OP_STAR:
+            short_circuit = eval_lazy(i, unwrapped_exp->op, unwrapped_exp->left, unwrapped_exp->right, &left, &right);
             if(left->type != T_NUMBER || right->type != T_NUMBER)
                 raise_runtime_error(i, "Type Error:\t Operands must be numbers\n");
             result = gc_init_number(i->garbage_collector, *((double*)left->value) * *((double*)right->value));
             break;
         case OP_SLASH:
+            short_circuit = eval_lazy(i, unwrapped_exp->op, unwrapped_exp->left, unwrapped_exp->right, &left, &right);
             if(left->type != T_NUMBER || right->type != T_NUMBER)
                 raise_runtime_error(i, "Type Error:\t Operands must be numbers\n");
             result = gc_init_number(i->garbage_collector, *((double*)left->value) / *((double*)right->value));
             break;
         case OP_PLUS:
+            short_circuit = eval_lazy(i, unwrapped_exp->op, unwrapped_exp->left, unwrapped_exp->right, &left, &right);
             if(left->type == T_NUMBER && right->type == T_NUMBER)
                 result = gc_init_number(i->garbage_collector, *((double*)left->value) + *((double*)right->value));
             else if(left->type == T_STRING && right->type == T_STRING)
@@ -352,52 +370,83 @@ value_t *eval_binary(interpreter_t *i, exp_t *exp) {
                 raise_runtime_error(i, "Type Error:\t Operands must be two numbers or two strings\n");
             break;
         case OP_MOD:
+            short_circuit = eval_lazy(i, unwrapped_exp->op, unwrapped_exp->left, unwrapped_exp->right, &left, &right);
             if(left->type != T_NUMBER || right->type != T_NUMBER){
                 raise_runtime_error(i, "Type Error:\t Operands must be numbers\n");
             }
             result = gc_init_number(i->garbage_collector, fmod(*((double*)left->value), *((double*)right->value)));
             break;
         case OP_GREATER:
+            short_circuit = eval_lazy(i, unwrapped_exp->op, unwrapped_exp->left, unwrapped_exp->right, &left, &right);
             if(left->type != T_NUMBER || right->type != T_NUMBER)
                 raise_runtime_error(i, "Type Error:\t Operands must be numbers\n");
             result = gc_init_boolean(i->garbage_collector, *((double*)left->value) > *((double*)right->value));
             break;
         case OP_GREATER_EQUAL:
+            short_circuit = eval_lazy(i, unwrapped_exp->op, unwrapped_exp->left, unwrapped_exp->right, &left, &right);
             if(left->type != T_NUMBER || right->type != T_NUMBER)
                 raise_runtime_error(i, "Type Error:\t Operands must be numbers\n");
             result = gc_init_boolean(i->garbage_collector, *((double*)left->value) >= *((double*)right->value));
             break;
         case OP_LESS:
+            short_circuit = eval_lazy(i, unwrapped_exp->op, unwrapped_exp->left, unwrapped_exp->right, &left, &right);
             if(left->type != T_NUMBER || right->type != T_NUMBER)
                 raise_runtime_error(i, "Type Error:\t Operands must be numbers\n");
             result = gc_init_boolean(i->garbage_collector, *((double*)left->value) < *((double*)right->value));
             break;
         case OP_LESS_EQUAL:
+            short_circuit = eval_lazy(i, unwrapped_exp->op, unwrapped_exp->left, unwrapped_exp->right, &left, &right);
             if(left->type != T_NUMBER || right->type != T_NUMBER)
                 raise_runtime_error(i, "Type Error:\t Operands must be numbers\n");
             result = gc_init_boolean(i->garbage_collector, *((double*)left->value) <= *((double*)right->value));
             break;
         case OP_EQUAL:
+            short_circuit = eval_lazy(i, unwrapped_exp->op, unwrapped_exp->left, unwrapped_exp->right, &left, &right);
             result = gc_init_boolean(i->garbage_collector, is_equal(i, left, right));
             break;
         case OP_NOT_EQUAL:
+            short_circuit = eval_lazy(i, unwrapped_exp->op, unwrapped_exp->left, unwrapped_exp->right, &left, &right);
             result = gc_init_boolean(i->garbage_collector, !is_equal(i, left, right));
             break;
         case OP_AND:
-            if(left->type != right ->type || left->type != T_BOOLEAN)
-                raise_runtime_error(i, "Type Error:\t Operands must be booleans\n");
+            short_circuit = eval_lazy(i, unwrapped_exp->op, unwrapped_exp->left, unwrapped_exp->right, &left, &right);
             result = gc_init_boolean(i->garbage_collector, *((int*)left->value) && *((int*)right->value));
             break;
         case OP_OR:
-            if(left->type != right->type || left->type != T_BOOLEAN)
-                raise_runtime_error(i, "Type Error:\t Operands must be booleans\n");
+            short_circuit = eval_lazy(i, unwrapped_exp->op, unwrapped_exp->left, unwrapped_exp->right, &left, &right);
             result = gc_init_boolean(i->garbage_collector, *((int*)left->value) || *((int*)right->value));
             break; 
         default: // Theoretically unreachable
             raise_runtime_error(i, "Unkown Operation\n");
     }
-    gc_release(i->garbage_collector, 2);
+    gc_release(i->garbage_collector, short_circuit ? 1 : 2);
     return result;
+}
+
+int eval_lazy(interpreter_t *i, operator_t op, exp_t *left, exp_t *right, value_t **left_v, value_t **right_v) { 
+    *left_v = eval(i, left);
+    gc_hold(i->garbage_collector, *left_v);
+    switch(op){
+        case OP_AND:
+            if((*left_v)->type != T_BOOLEAN)
+                raise_runtime_error(i, "Type Error:\t Operands must be booleans\n");
+            if(*((int*)(*left_v)->value) == 0)
+                return 1;
+            break;
+        case OP_OR:
+            if((*left_v)->type != T_BOOLEAN)
+                raise_runtime_error(i, "Type Error:\t Operands must be booleans\n");
+            if(*((int*)(*left_v)->value) == 1)
+                return 1;
+            break;
+        default:
+            break;
+    }
+    *right_v = eval(i, right);
+    if((op == OP_AND || op == OP_OR) && (*right_v)->type != T_BOOLEAN)
+        raise_runtime_error(i, "Type Error:\t Operands must be booleans\n");
+    gc_hold(i->garbage_collector, *right_v);
+    return 0;
 }
 
 value_t *eval_forwarding(interpreter_t *i, exp_t *left, exp_t *right) {
@@ -412,6 +461,7 @@ value_t *eval_forwarding(interpreter_t *i, exp_t *left, exp_t *right) {
 
 value_t *eval_call(interpreter_t *i, exp_t *exp, value_t* forwarded) {
     exp_call_t *unwrapped_exp = exp_unwrap(exp);
+    // Evaluating all actuals parameters
     l_list_t values = NULL;
     l_list_t expressions = unwrapped_exp->actuals;
     int count = 0;
@@ -425,22 +475,27 @@ value_t *eval_call(interpreter_t *i, exp_t *exp, value_t* forwarded) {
     if(forwarded)
         list_add(&values, forwarded);
     list_reverse_in_place(&values);
+    // Get the closure from the environment
     value_t *v = env_get(i->environment, unwrapped_exp->identifier);
     if(v == NULL)
         raise_runtime_error(i, "The identifier '%s' was not declared\n", unwrapped_exp->identifier);
     if(v->type != T_CLOSURE)
         raise_runtime_error(i, "The identifier '%s' is not a function name\n", unwrapped_exp->identifier);
     closure_t *closure = (closure_t*)v->value;
+    // Saving the current size of the environment
     int old_size = i->environment->size;
     if(!env_bulk_bind(i->environment, closure->formals, values))
         raise_runtime_error(i, "actuals number and formals number are not the same");
+    // Releasing the actuals (now they are reachable from the env)
     gc_release(i->garbage_collector, count);
-    // preparing for the long jump (return)
+    // Saving the stack pointer preparing for the long jump (return)
     int old_sp = stack_pointer;
     if(stack_pointer >= STACK_SIZE)
         raise_runtime_error(i, "Stack overflow\n");
     int jmp = setjmp(stack[stack_pointer++]);
+    // Check if a jmp (return) has happened and set the return value properly
     value_t *res = jmp ? i->returned_value : eval_stmt(i, closure->body);
+    // Restoring the environment, stack pointer and cleaning memory
     env_restore(i->environment, old_size);
     while(values) {
         l_list_t tmp = values;

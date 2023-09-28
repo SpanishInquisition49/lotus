@@ -85,7 +85,7 @@ clean:
 	-@rm -f src/*.o lib/*.o $(executable)
 
 valgrind: $(executable)
-	-@valgrind $(VFLAGS) --log-file=./logs/lambda-arithmetic-%p-%n.log ./$(executable) ./foo
+	-@valgrind $(VFLAGS) --log-file=./logs/lambda-arithmetic-%p-%n.log ./$(executable) ./test/functions.lts
 
 clean_logs:
 	-@rm -f ./logs/*

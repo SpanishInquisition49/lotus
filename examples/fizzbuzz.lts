@@ -1,0 +1,22 @@
+fun fizzbuzz_helper(num, limit) {
+    let fizz = num % 3 == 0;
+    let buzz = num % 5 == 0;
+
+    if(num == limit + 1)
+        return nil;
+    else if(fizz and buzz)
+        print "FizzBuzz";
+    else if(fizz)
+        print "Fizz";
+    else if(buzz)
+        print "Buzz";
+    else
+        print num;
+    fizzbuzz_helper(num + 1, limit);
+}
+
+fun fizzbuzz(n) {
+    fizzbuzz_helper(1, n);
+}
+
+fizzbuzz(100);

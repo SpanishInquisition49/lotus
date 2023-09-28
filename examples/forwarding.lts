@@ -1,0 +1,19 @@
+fun calculate_discount(price, discount_rate) {
+    let discounted_price = price - (price * discount_rate);
+    return discounted_price;
+}
+
+fun apply_tax(price, tax_rate) {
+    let total_price = price + (price * tax_rate);
+    return total_price;
+}
+
+let price = 100;
+let discount_rate = 0.2;
+let tax_rate = 0.1;
+
+let final_price = price
+    |> calculate_discount(discount_rate)
+    |> apply_tax(tax_rate);
+
+print final_price; // Output: 88

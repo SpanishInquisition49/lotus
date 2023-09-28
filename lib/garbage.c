@@ -197,6 +197,8 @@ value_t *gc_init_nil(garbage_collector_t *gc) {
 }
 
 void value_destroy(value_t *val) {
+    if(val == NULL)
+        return;
     switch(val->type) {
         case T_CLOSURE: {
                 closure_t *tmp = (closure_t*)val->value;

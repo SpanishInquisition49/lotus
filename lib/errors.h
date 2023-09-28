@@ -19,6 +19,7 @@ enum log_level_t {
     ERROR,
 };
 
+__attribute__((format (printf, 2, 3)))
 void err_log(enum log_level_t, const char *restrict, ...);
 void err_log_v(enum log_level_t, const char *restrict, va_list);
 
