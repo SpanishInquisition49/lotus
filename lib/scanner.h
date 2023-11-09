@@ -1,8 +1,8 @@
 #ifndef SCANNER_H
 #define SCANNER_H
+#include "errors.h"
 #include "list.h"
 #include "token.h"
-#include "errors.h"
 
 /**
  * @brief A scanner_t "object"
@@ -14,24 +14,23 @@
  * @param int length: The length (bytes) of the source code
  * @param int errors[]: An array that keep count of various error types
  */
-typedef struct { 
-    const char* filename;
-    char* source;
-    l_list_t tokens;
-    int line_number;
-    int start;
-    int current;
-    int length;
-    int errors[LOG_LEVELS];
+typedef struct {
+  const char *filename;
+  char *source;
+  l_list_t tokens;
+  int line_number;
+  int start;
+  int current;
+  int length;
+  int errors[LOG_LEVELS];
 } scanner_t;
-
 
 /**
  * @brief Initialize the given scanner
  * @param scanner_t *scanner: The scanner to initialize
  * @param const char* fil_name: The path of the source file
  */
-void scanner_init(scanner_t*, const char*);
+void scanner_init(scanner_t *, const char *);
 
 /**
  * @brief Destroy the given scanner
@@ -41,9 +40,10 @@ void scanner_destroy(scanner_t);
 
 /**
  * @brief Perform a lexical analysis of the given source file
- * @param scanner_t: The scanner that contains the source filename and the token list
- */ 
-void scanner_scan_tokens(scanner_t*);
+ * @param scanner_t: The scanner that contains the source filename and the token
+ * list
+ */
+void scanner_scan_tokens(scanner_t *);
 
 /**
  * @brief Print a report of the errors and warning in the scanner phase

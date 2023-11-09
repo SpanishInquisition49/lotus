@@ -1,0 +1,12 @@
+#!/bin/bash
+
+echo "Runs clang-format on source files"
+
+for FILE in $(git diff --cached --name-only | grep -E '.*\.(c|h)')
+do
+        echo "Formatting $FILE"
+        clang-format -i --style=LLVM $FILE
+        git add $FILE
+done
+
+echo "Done"
