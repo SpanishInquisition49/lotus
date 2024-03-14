@@ -15,37 +15,39 @@ MAGENTA='\e[0;35m'
 # $3 Assertion
 # $* Input
 RunTestSuite() {
-    local title=$1
-    local program=$2
-    local assertion=$3
-    shift 3
-    local startTime=`date +%s%N`
-    $program $* &> .output
-    local exitStatus=$?
-    local endTime=`date +%s%N`
-    local runtime=$(((endTime-startTime)/1000000))
-    echo -e "${YELLOW}Test:${NOCOLOR} $title"
-    local differences=$(diff <(echo "$assertion") <(cat .output))
-    if [ "$differences" == "" ]; then
-        echo -e "${GREEN}  Pass\t[Exit Status: $exitStatus] [$runtime ms]${NOCOLOR}"
-    else
-        echo -e "${RED}  Fail\t[Exit Status: $exitStatus] [$runtime ms]${NOCOLOR}"
-        echo -e "${DARKGREY}Output:${NOCOLOR}"
-        echo -e "$(cat .output)"
-        echo -e "${DARKGREY}Expected Output:${NOCOLOR}"
-        echo -e "$assertion"
-    fi
-    rm .output
+	local title=$1
+	local program=$2
+	local assertion=$3
+	shift 3
+	local startTime
+	local endTime
+	local differences
+	startTime=$(date +%s%N)
+	$program "$@" &>.output
+	local exitStatus=$?
+	endTime=$(date +%s%N)
+	local runtime=$(((endTime - startTime) / 1000000))
+	echo -e "${YELLOW}Test:${NOCOLOR} $title"
+	differences=$(diff <(echo "$assertion") <(cat .output))
+	if [ "$differences" == "" ]; then
+		echo -e "${GREEN}  Pass\t[Exit Status: $exitStatus] [$runtime ms]${NOCOLOR}"
+	else
+		echo -e "${RED}  Fail\t[Exit Status: $exitStatus] [$runtime ms]${NOCOLOR}"
+		echo -e "${DARKGRAY}Output:${NOCOLOR}"
+		echo -e "$(cat .output)"
+		echo -e "${DARKGRAY}Expected Output:${NOCOLOR}"
+		echo -e "$assertion"
+	fi
+	rm .output
 }
-
 
 executable=lotus
 
 echo -e "${MAGENTA}Running tests ${NOCOLOR}"
 
-RunTestSuite 'Basic arithmetic'         ./$executable   "$(cat ./test/.arithmetic-output)"  ./test/arithmetic.lts
-RunTestSuite 'Strings'                  ./$executable   "$(cat ./test/.string-output)"      ./test/string.lts
-RunTestSuite 'Conditional statements'   ./$executable   "$(cat ./test/.conditional-output)" ./test/conditional.lts
-RunTestSuite 'Recursion and forwarding' ./$executable   "$(cat ./test/.functions-output)"   ./test/functions.lts
+RunTestSuite 'Basic arithmetic' ./$executable "$(cat ./test/.arithmetic-output)" ./test/arithmetic.lts
+RunTestSuite 'Strings' ./$executable "$(cat ./test/.string-output)" ./test/string.lts
+RunTestSuite 'Conditional statements' ./$executable "$(cat ./test/.conditional-output)" ./test/conditional.lts
+RunTestSuite 'Recursion and forwarding' ./$executable "$(cat ./test/.functions-output)" ./test/functions.lts
 
 exit 0
